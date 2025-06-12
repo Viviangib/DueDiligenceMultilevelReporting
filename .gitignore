@@ -1,2 +1,3 @@
 benv/
 .env
+__pycache__/
