@@ -1,10 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from schemas.user import UserCreate, UserLogin, Token
 from db import SessionLocal
-from controllers.user import create_user
-from controllers.user import authenticate_user
-from fastapi import HTTPException,status
+from controllers.user import create_user, authenticate_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -15,16 +13,12 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/signup")
+@router.post("/signup", status_code=201)
 def signup(user: UserCreate, db: Session = Depends(get_db)):
-    try:
-        create_user(db, user)
-        return "User created sucessfully"
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-   
+    create_user(db, user)
+    return {"message": "User created successfully"}
 
 @router.post("/login", response_model=Token)
 def login(user: UserLogin, db: Session = Depends(get_db)):
     token = authenticate_user(db, user)
-    return {"access_token": token}
+    return {"access_token": token, "token_type": "bearer"}
