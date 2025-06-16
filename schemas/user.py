@@ -6,7 +6,7 @@ class UserCreate(BaseModel):
     password: str
 
 class UserLogin(BaseModel):
-    username: str
+    email: EmailStr
     password: str
 
 class Token(BaseModel):
