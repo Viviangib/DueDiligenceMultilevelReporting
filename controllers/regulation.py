@@ -15,7 +15,6 @@ def process_regulation(db: Session, file_path: str, regulation_id: int):
 def get_regulation_status(db: Session, regulation_id: int):
     """Get the embedding status of a regulation."""
     regulation = regulation_service.get_regulation(db, regulation_id)
-    
     if not regulation:
         return "not found"
     return str(getattr(regulation, 'embedding_status', 'not found'))
