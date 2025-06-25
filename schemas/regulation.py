@@ -24,7 +24,7 @@ class Regulation(RegulationBase):
     embedding_status: str
     pinecone_namespace: str
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class AnalysisResult(BaseModel):
     indicator_id: str
