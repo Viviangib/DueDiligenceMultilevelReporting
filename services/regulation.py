@@ -18,7 +18,7 @@ import re
 from models.regulation import Regulation, AnalysisResult
 from utils.constants import SYSTEM_PROMPT, ALIGNMENT_DEF
 from config import settings
-from vector_store.pinecone_store import embed_and_store
+from vector_store.pinecone import embed_and_store
 from utils.indicator import extract_indicators_from_pdf
 
 
