@@ -17,12 +17,6 @@ class RegulationStatus(BaseModel):
     regulation_id: int
     embedding_status: str
 
-class AnalysisResult(BaseModel):
-    indicator_id: str
-    indicator_text: str
-    alignment_level: str
-    justification: str
-    evidence: str
 
 class Regulation(RegulationBase):
     id: int
@@ -32,6 +26,13 @@ class Regulation(RegulationBase):
     class Config:
         orm_mode = True
 
+class AnalysisResult(BaseModel):
+    indicator_id: str
+    indicator_text: str
+    alignment_level: str
+    justification: str
+    evidence: str
+
 class AnalysisResultBase(BaseModel):
     """Base schema for analysis result."""
     indicator_id: str
@@ -39,7 +40,6 @@ class AnalysisResultBase(BaseModel):
     alignment_level: str
     justification: str
     evidence: str
-
 class AnalysisResultCreate(AnalysisResultBase):
     """Schema for creating an analysis result."""
     regulation_id: int
@@ -51,7 +51,6 @@ class AnalysisResultResponse(AnalysisResultBase):
 
     class Config:
         from_attributes = True
-
 class AnalysisBatchResponse(BaseModel):
     """Schema for batch analysis response."""
     regulation_id: int
