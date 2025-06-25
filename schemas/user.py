@@ -26,8 +26,11 @@ class UserLogin(BaseModel):
 
     @field_validator("password")
     def password_validation(cls, v):
-        if len(v)<8:
-            raise ValueError("Password must be at least 8 characters") 
+        if v is None:
+            raise ValueError("Password is required")
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        return v
 
 class Token(BaseModel):
     access_token: str
