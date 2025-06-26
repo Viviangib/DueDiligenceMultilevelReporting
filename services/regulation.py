@@ -21,10 +21,6 @@ from config import settings
 from vector_store.pinecone import embed_and_store_documents,chunk_text
 from utils.indicator import extract_indicators_from_pdf
 
-
-def sanitize_index_name(name: str) -> str:
-       return re.sub(r'[^a-z0-9-]', '-', name.lower())
-
 class RegulationService:
     """Service for handling regulation analysis operations."""
 
@@ -36,8 +32,7 @@ class RegulationService:
     def create_regulation(self, db: Session, name: str, file_type: str) -> Regulation:
 
         """Create a new regulation record."""
-        raw_namespace = name + "_" + str(uuid.uuid4())
-        namespace = sanitize_index_name(raw_namespace)
+        namespace = settings.PINECONE_NAMESPACE
         regulation = Regulation(
             name=name,
             file_type=file_type,

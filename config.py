@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     PINECONE_INDEX_NAME: str= ""
     DATABASE_URL: str= ""
     PINECONE_API_KEY: SecretStr=SecretStr("")
+    PINECONE_NAMESPACE: str= ""
     REGION: str = "us-east-1"
     CLOUD: str = "aws"
 
