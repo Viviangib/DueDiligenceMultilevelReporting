@@ -15,7 +15,7 @@ class Regulation(Base):
     file_type = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     embedding_status = Column(String, default="in process")
-    pinecone_namespace = Column(String, unique=True)
+    pinecone_namespace = Column(String, unique=False)
 
     # Relationships
     analysis_results = relationship("AnalysisResult", back_populates="regulation")
