@@ -18,7 +18,7 @@ import re
 from models.regulation import Regulation, AnalysisResult
 from utils.constants import SYSTEM_PROMPT, ALIGNMENT_DEF
 from config import settings
-from vector_store.pinecone import embed_and_store
+from vector_store.pinecone import embed_and_store_documents,chunk_text
 from utils.indicator import extract_indicators_from_pdf
 
 
@@ -64,9 +64,23 @@ class RegulationService:
             regulation = self.get_regulation(db, regulation_id)
             if not regulation:
                 raise Exception("Regulation not found")
+
+            documents = []
             with pdfplumber.open(file_path) as pdf:
-                text = "".join(page.extract_text() + "\n" for page in pdf.pages if page.extract_text())
-            embed_and_store(text, str(regulation.pinecone_namespace))
+                for page_number, page in enumerate(pdf.pages, start=1):
+                    page_text = page.extract_text()
+                    if not page_text:
+                        continue
+                    chunks = chunk_text(page_text)
+                    for chunk_index, chunk in enumerate(chunks):
+                        chunk.metadata = {
+                            "page": page_number,
+                            "chunk_index": chunk_index,
+                            "regulation_id": regulation_id
+                        }
+                        documents.append(chunk)
+
+            embed_and_store_documents(documents, str(regulation.pinecone_namespace))
             self.update_embedding_status(db, regulation_id, "completed")
         except Exception as e:
             self.update_embedding_status(db, regulation_id, "failed")

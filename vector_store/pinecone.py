@@ -35,28 +35,27 @@ def get_embedder():
 
 
 def chunk_text(text: str, chunk_size=1500, chunk_overlap=250) -> List[Document]:
-    """Split large text into Document chunks."""
+    """Split text into overlapping chunks."""
     splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     texts = splitter.split_text(text)
     return [Document(page_content=chunk) for chunk in texts]
 
 
-def embed_and_store(text: str, namespace: str, batch_size: int = 100):
-    """Embed text and store in Pinecone under the given namespace."""
+def embed_and_store_documents(documents: List[Document], namespace: str, batch_size: int = 100):
     ensure_index()
     embedder = get_embedder()
-    chunks = chunk_text(text)
-    print(f"Uploading {len(chunks)} chunks to Pinecone...")
+
     vs = PineconeVectorStore.from_existing_index(
         index_name=settings.PINECONE_INDEX_NAME,
         embedding=embedder,
         namespace=namespace
     )
-    for i in range(0, len(chunks), batch_size):
-        batch = chunks[i:i+batch_size]
+
+    for i in range(0, len(documents), batch_size):
+        batch = documents[i:i + batch_size]
         ids = [str(uuid.uuid4()) for _ in batch]
         try:
             vs.add_documents(documents=batch, ids=ids)
             print(f"Uploaded batch {i // batch_size + 1}")
         except Exception as e:
-            print(f"Error uploading batch {i // batch_size + 1}: {e}") 
+            print(f"Error uploading batch {i // batch_size + 1}: {e}")
