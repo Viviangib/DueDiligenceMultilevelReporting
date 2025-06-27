@@ -16,10 +16,9 @@ import re
 
 
 from models.regulation import Regulation, AnalysisResult
-from utils.constants import SYSTEM_PROMPT, ALIGNMENT_DEF
 from config import settings
 from vector_store.pinecone import embed_and_store_documents,chunk_text
-from utils.indicator import extract_indicators_from_pdf
+
 
 class RegulationService:
     """Service for handling regulation analysis operations."""
@@ -81,42 +80,42 @@ class RegulationService:
             self.update_embedding_status(db, regulation_id, "failed")
             raise Exception(str(e))
 
-    async def analyze_indicator(self, indicator: str, namespace: str) -> Dict:
-        """Analyze a single indicator against regulation."""
-        vector_store = PineconeVectorStore.from_existing_index(
-            index_name=settings.PINECONE_INDEX_NAME,
-            embedding=self.embeddings,
-            namespace=namespace
-        )
-        retriever = vector_store.as_retriever(search_kwargs={"k": 5})
-        evidence_docs = retriever.get_relevant_documents(indicator)
-        evidence = [doc.page_content for doc in evidence_docs]
+    # async def analyze_indicator(self, indicator: str, namespace: str) -> Dict:
+    #     """Analyze a single indicator against regulation."""
+    #     vector_store = PineconeVectorStore.from_existing_index(
+    #         index_name=settings.PINECONE_INDEX_NAME,
+    #         embedding=self.embeddings,
+    #         namespace=namespace
+    #     )
+    #     retriever = vector_store.as_retriever(search_kwargs={"k": 5})
+    #     evidence_docs = retriever.get_relevant_documents(indicator)
+    #     evidence = [doc.page_content for doc in evidence_docs]
 
-        prompt = f"""
-        {SYSTEM_PROMPT}
-        Evaluate the following VSS indicator against the provided regulatory text to determine 
-        the level of alignment, using the categories: {ALIGNMENT_DEF}. Provide a brief justification.
+    #     prompt = f"""
+    #     {SYSTEM_PROMPT}
+    #     Evaluate the following VSS indicator against the provided regulatory text to determine 
+    #     the level of alignment, using the categories: {ALIGNMENT_DEF}. Provide a brief justification.
 
-        Indicator: {indicator}
-        Evidence: {evidence}
-        """
+    #     Indicator: {indicator}
+    #     Evidence: {evidence}
+    #     """
 
-        response = await self.openai_client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        content = response.choices[0].message.content if response.choices and response.choices[0].message.content else ""
+    #     response = await self.openai_client.chat.completions.create(
+    #         model="gpt-4",
+    #         messages=[{"role": "user", "content": prompt}]
+    #     )
+    #     content = response.choices[0].message.content if response.choices and response.choices[0].message.content else ""
 
-        alignment_level = content.split("Alignment Level:")[1].split("\n")[0].strip() \
-            if "Alignment Level:" in content else "N/A"
-        justification = content.split("Justification:")[1].strip() \
-            if "Justification:" in content else "No justification provided."
+    #     alignment_level = content.split("Alignment Level:")[1].split("\n")[0].strip() \
+    #         if "Alignment Level:" in content else "N/A"
+    #     justification = content.split("Justification:")[1].strip() \
+    #         if "Justification:" in content else "No justification provided."
 
-        return {
-            "alignment_level": alignment_level,
-            "justification": justification,
-            "evidence": evidence
-        }
+    #     return {
+    #         "alignment_level": alignment_level,
+    #         "justification": justification,
+    #         "evidence": evidence
+    #     }
 
     def save_analysis_result(self, db: Session, regulation_id: int,
                            indicator_id: str, result: Dict) -> AnalysisResult:
@@ -144,24 +143,24 @@ class RegulationService:
 
         return output_file
 
-    def extract_and_analyze_vss(self, file_path: str, regulation_id: int, db):
-        indicators = extract_indicators_from_pdf(file_path)
-        if not indicators:
-            raise Exception("No indicators found in VSS document")
-        regulation = self.get_regulation(db, regulation_id)
-        namespace = str(getattr(regulation, 'pinecone_namespace', ''))
-        results = []
-        for idx, indicator in enumerate(indicators):
-            # For demonstration, just return dummy alignment; replace with real analysis logic
-            analysis = {"alignment_level": "N/A", "justification": "Not implemented", "evidence": []}
-            results.append({
-                "indicator_id": f"IND{idx+1:03d}",
-                "indicator_text": indicator,
-                "alignment_level": analysis["alignment_level"],
-                "justification": analysis["justification"],
-                "evidence": str(analysis["evidence"])
-            })
-        return results
+    # def extract_and_analyze_vss(self, file_path: str, regulation_id: int, db):
+    #     indicators = extract_indicators_from_pdf(file_path)
+    #     if not indicators:
+    #         raise Exception("No indicators found in VSS document")
+    #     regulation = self.get_regulation(db, regulation_id)
+    #     namespace = str(getattr(regulation, 'pinecone_namespace', ''))
+    #     results = []
+    #     for idx, indicator in enumerate(indicators):
+    #         # For demonstration, just return dummy alignment; replace with real analysis logic
+    #         analysis = {"alignment_level": "N/A", "justification": "Not implemented", "evidence": []}
+    #         results.append({
+    #             "indicator_id": f"IND{idx+1:03d}",
+    #             "indicator_text": indicator,
+    #             "alignment_level": analysis["alignment_level"],
+    #             "justification": analysis["justification"],
+    #             "evidence": str(analysis["evidence"])
+    #         })
+    #     return results
 
     def save_analysis_to_excel(self, results: list) -> str:
         output_file = f"results/benchmark_results_{uuid.uuid4()}.xlsx"

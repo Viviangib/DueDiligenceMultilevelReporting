@@ -8,12 +8,15 @@ from utils.indicator_parser import (
 )
 import uuid
 import os
+from pprint import pformat
+
 
 router = APIRouter(prefix="/indicators", tags=["indicators"])
 
 @router.post("/extract")
 async def extract_indicators(file: UploadFile = File(...)):
-    if not file.filename.endswith((".pdf", ".docx")):
+    if not file.filename or not file.filename.endswith((".pdf", ".docx")):
+    
         raise HTTPException(status_code=400, detail="Only PDF and DOCX files are supported")
 
     content = await file.read()
@@ -33,7 +36,8 @@ async def extract_indicators(file: UploadFile = File(...)):
     # Save response to .docx for review
     os.makedirs("llm_outputs", exist_ok=True)
     output_file = f"llm_outputs/extracted_indicators_{uuid.uuid4()}.docx"
-    save_to_docx(result_text, output_file)
+
+    save_to_docx(pformat(result_text), output_file)
 
     return FileResponse(
         output_file,
