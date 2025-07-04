@@ -23,7 +23,7 @@ from db import Base
 from models.user import User
 from models.indicator import Indicator
 from models.regulation import Regulation
-from models.regulation import AnalysisResult
+
 
 # this is the Alembic Config object
 config = context.config

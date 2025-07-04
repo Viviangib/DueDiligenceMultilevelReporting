@@ -21,7 +21,13 @@ You are expected to intelligently extract these indicators regardless of format.
 
 ---
 
-🎯 **Your goal: Extract as many indicators as possible from the document content.**
+🎯 **Your goal: Extract as many indicators as possible from the document content.** but they must be valid, if some table or information has the right format but the information in it doesnt look like an indicator, then you muust ignore that.
+Table 1:
+ Project Identification indicators
+Field Answer Answer Options
+Country or region * (Single-select) List of countries
+
+. For example this example above. An indicator will have a valid question or statement (necessary). This table for instance doesnt have that.
 
 Do NOT rely on exact headings. Field names will vary from document to document. Use your best judgment to infer proper headings and meaning, even if structure is not perfect.
 

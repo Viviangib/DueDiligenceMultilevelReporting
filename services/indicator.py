@@ -4,7 +4,7 @@ from schemas.indicator import IndicatorCreate
 
 class IndicatorService:
     def save_indicator(self, db: Session, indicator_data: dict) -> Indicator:
-        indicator = Indicator(indicator=str(indicator_data))
+        indicator = Indicator(indicator=indicator_data)
         db.add(indicator)
         db.commit()
         db.refresh(indicator)
