@@ -15,6 +15,9 @@ from db import SessionLocal
 from fastapi import Depends
 from fastapi import BackgroundTasks
 from services.indicator import IndicatorService
+import pandas as pd
+import json
+from models.indicator_status import IndicatorStatus
 
 
 router = APIRouter(prefix="/indicators", tags=["indicators"])
@@ -61,25 +64,63 @@ def process_and_save_indicators_bg(content: bytes, filename: str, db: Session, s
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         result_text = loop.run_until_complete(parse_indicators_with_llm(extracted_text))
-        # Save all indicators using save_indicator for each one
         indicator_service = IndicatorService()
+        indicators_saved = []
         if isinstance(result_text, list):
             for indicator in result_text:
-                indicator_service.save_indicator(db, indicator)
+                indicators_saved.append(indicator_service.save_indicator(db, indicator))
         else:
-            indicator_service.save_indicator(db, result_text)
-        indicator_service.update_status_job(db, status_id, "completed")
+            indicators_saved.append(indicator_service.save_indicator(db, result_text))
+        # Generate Excel file with Indicator ID and Question
+        data = []
+        for idx, indicator_obj in enumerate(indicators_saved):
+            raw_indicator = indicator_obj.indicator
+            if isinstance(raw_indicator, str):
+                try:
+                    parsed = json.loads(raw_indicator)
+                except Exception as e:
+                    logger.error(f"Failed to parse indicator JSON: {e}")
+                    parsed = {}
+            elif isinstance(raw_indicator, dict):
+                parsed = raw_indicator
+            else:
+                logger.error(f"Unexpected type for indicator: {type(raw_indicator)}")
+                parsed = {}
+            indicator_id = parsed.get("ID", f"IND{idx+1:03d}")
+            question = parsed.get("Question", str(parsed))
+            data.append({"Indicator ID": indicator_id, "Question": question})
+        df = pd.DataFrame(data)
+        os.makedirs("results", exist_ok=True)
+        excel_path = os.path.join("results", f"indicator_extract_{status_id}.xlsx")
+        df.to_excel(excel_path, index=False)
+        # Save file path in IndicatorStatus
+        status_job = db.query(IndicatorStatus).filter(IndicatorStatus.id == status_id).first()
+        if status_job:
+            setattr(status_job, 'file', excel_path)
+            setattr(status_job, 'status', 'completed')
+            db.commit()
+        else:
+            logger.error(f"IndicatorStatus with id {status_id} not found.")
     except Exception as e:
         logger.error(f"Indicator extraction failed: {str(e)}")
-        IndicatorService().update_status_job(db, status_id, "error")
+        status_job = db.query(IndicatorStatus).filter(IndicatorStatus.id == status_id).first()
+        if status_job:
+            setattr(status_job, 'status', 'error')
+            db.commit()
 
 @router.get("/extract/status/{status_id}")
 def get_indicator_status(
     status_id: int,
     db: Session = Depends(get_db)
 ):
-    from models.indicator_status import IndicatorStatus
     status_job = db.query(IndicatorStatus).filter(IndicatorStatus.id == status_id).first()
     if not status_job:
         raise HTTPException(status_code=404, detail="Indicator status not found")
+    file_path = getattr(status_job, 'file', None)
+    if isinstance(file_path, str) and file_path and os.path.exists(file_path):
+        return FileResponse(
+            file_path,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            filename=os.path.basename(file_path)
+        )
     return status_job

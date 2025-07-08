@@ -40,9 +40,9 @@ class AnalysisService:
 
             # 1. Get 20 indicators from DB
             indicators = (
-                db.query(Indicator)   # skip the first 5 rows
-                .limit(3)      # then fetch 3 rows
-                .all()
+                db.query(Indicator)
+                .offset(193)  # skip first 213 records, start at 214th
+                .all()        # fetch all records from there
             )
             if not indicators:
                 raise Exception("No indicators found in DB.")
@@ -108,14 +108,14 @@ Indicator: {question}
 
  Supporting Documents (from the VSS): {vss_texts}
  
-- Evidence from RAG (from the regulation): {evidence}
+- Results from Regulation (RAG results): {evidence}
 
 Alignment Definitions: {alignment_def}
 
 For this indicator, provide the following in your response:
 
 (1) STATEMENT: <repeat the indicator as a positive statement>
-(2) EVIDENCE: <quote relevant evidence from the supporting documents and RAG>
+(2) EVIDENCE: <quote relevant evidence from the supporting documents that alligns with the regulations >
 (3) CITATIONS: <list the source and location of each evidence>
 (4) ALIGNMENT CATEGORY: <choose from alignment_def>
 (5) JUSTIFICATION: <justify the alignment category>
