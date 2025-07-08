@@ -10,8 +10,10 @@ from utils.prompts.indicator import INDICATOR_PROMPT
 import re
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
+from services.openAI.chat import OpenAIClient
 
-client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY.get_secret_value())
+
+openai_client=OpenAIClient()
 
 
 def split_text_into_chunks(text: str, chunk_size=3000, chunk_overlap=200) -> list:
@@ -83,13 +85,12 @@ async def parse_indicators_with_llm(text: str) -> List[dict]:
 
         print(f"📦 Processing chunk {i+1}/{len(chunks)} - {len(chunk)} characters")
         try:
-            response = await client.chat.completions.create(
-                model="gpt-4o",
+
+            content = await openai_client.chat(
+                prompt=prompt,
                 temperature=0,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=4000  # Reduce if needed for large inputs
+                max_tokens=4000
             )
-            content = response.choices[0].message.content
             print("\\n Content is ", content , "\n\n")
 
             if content:

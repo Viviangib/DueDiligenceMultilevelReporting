@@ -4,7 +4,6 @@ from utils.indicator_parser import (
     extract_text_from_pdf_bytes,
     extract_text_from_docx_bytes,
     parse_indicators_with_llm,
-    save_to_docx
 )
 import uuid
 import os

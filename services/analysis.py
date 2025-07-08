@@ -12,11 +12,13 @@ import re
 import json
 from models.analysis import Analysis
 import ast
+from services.openAI.chat import OpenAIClient
 
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
+openai_client = OpenAIClient()
 class AnalysisService:
     def create_analysis(self, db: Session) -> Analysis:
         analysis = Analysis(status="in_progress")
@@ -39,11 +41,11 @@ class AnalysisService:
         try:
             logger.info("Starting analysis service")
 
-            # 1. Get 20 indicators from DB
+
             indicators = (
                 db.query(Indicator)
-                .offset(193)  # skip first 213 records, start at 214th
-                .all()        # fetch all records from there
+                .limit(3)  
+                .all()       
             )
             if not indicators:
                 raise Exception("No indicators found in DB.")
@@ -91,14 +93,7 @@ class AnalysisService:
                 # Prompt for GPT
                 prompt= analysis_prompt(alignment_def,indicator_id,vss_texts,question,evidence)
 
-                try:
-                    response = await client.chat.completions.create(
-                        model="gpt-4o",
-                        messages=[{"role": "user", "content": prompt}]
-                    )
-                    content = response.choices[0].message.content or ""
-                except Exception as e:
-                    content = f"GPT-4 analysis failed: {e}"
+                content = await openai_client.chat(prompt)
 
                 def extract_section(label):
                     match = re.search(rf"{label}:\s*(.*?)\n(?=\w+:|$)", content, re.DOTALL)
