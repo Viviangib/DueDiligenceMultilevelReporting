@@ -2,7 +2,8 @@ import logging
 import pandas as pd
 from sqlalchemy.orm import Session
 from models.indicator import Indicator
-from utils.alignment import alignment_def, system_prompt
+from utils.prompts.alignment import alignment_def
+from utils.prompts.analysis import analysis_prompt
 from vector_store.pinecone_store import rag_search
 from openai import AsyncOpenAI
 import uuid
@@ -88,45 +89,7 @@ class AnalysisService:
                 evidence = rag_search(str(question))
 
                 # Prompt for GPT
-                prompt = f"""
-{system_prompt}
-
-You are given the following indicator:
-
-You are given the following Indicator from a voluntary sustainability standard (VSS):
-
-
-You are also provided with the following information:
--
-
-Alignment Definitions:
-{alignment_def}
-
-Criteria ID: {indicator_id}
-Type: Statement
-Indicator: {question}
-
- Supporting Documents (from the VSS): {vss_texts}
- 
-- Results from Regulation (RAG results): {evidence}
-
-Alignment Definitions: {alignment_def}
-
-For this indicator, provide the following in your response:
-
-(1) STATEMENT: <repeat the indicator as a positive statement>
-(2) EVIDENCE: <quote relevant evidence from the supporting documents that alligns with the regulations >
-(3) CITATIONS: <list the source and location of each evidence>
-(4) ALIGNMENT CATEGORY: <choose from alignment_def>
-(5) JUSTIFICATION: <justify the alignment category>
-
-Format your response as:
-STATEMENT: ...
-EVIDENCE: ...
-CITATIONS: ...
-ALIGNMENT CATEGORY: ...
-JUSTIFICATION: ...
-"""
+                prompt= analysis_prompt(alignment_def,indicator_id,vss_texts,question,evidence)
 
                 try:
                     response = await client.chat.completions.create(

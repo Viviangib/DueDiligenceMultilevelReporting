@@ -1,4 +1,4 @@
-import fitz  # PyMuPDF for PDFs
+import fitz 
 from docx import Document as DocxDocument
 from typing import List
 from openai import AsyncOpenAI
@@ -6,7 +6,7 @@ from config import settings
 from docx import Document as OutputDocx
 import io
 import json
-from utils.prompt import PROMPT_TEMPLATE
+from utils.prompts.indicator import INDICATOR_PROMPT
 import re
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
@@ -79,7 +79,7 @@ async def parse_indicators_with_llm(text: str) -> List[dict]:
 
     for i, chunk_doc in enumerate(chunks):
         chunk = chunk_doc.page_content
-        prompt = PROMPT_TEMPLATE.format(chunk=chunk)
+        prompt = INDICATOR_PROMPT.format(chunk=chunk)
 
         print(f"📦 Processing chunk {i+1}/{len(chunks)} - {len(chunk)} characters")
         try:

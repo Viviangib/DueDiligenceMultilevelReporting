@@ -1,4 +1,4 @@
-PROMPT_TEMPLATE = """
+INDICATOR_PROMPT = """
 
 You are an expert assistant specialized in extracting indicators from sustainability, compliance, climate, or ESG-related documents. Your task is to identify and extract all indicators from the provided document content and present them in a standardized JSON format.
 
