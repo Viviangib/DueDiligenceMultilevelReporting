@@ -19,11 +19,4 @@ def get_regulation_status(db: Session, regulation_id: int):
         return "not found"
     return str(getattr(regulation, 'embedding_status', 'not found'))
 
-def extract_and_analyze_vss(file_path: str, regulation_id: int, db: Session):
-    """Extract indicators and analyze VSS using the service layer."""
-    return regulation_service.extract_and_analyze_vss(file_path, regulation_id, db)
-
-def save_analysis_to_excel(results: list):
-    """Save analysis results to Excel using the service layer."""
-    return regulation_service.save_analysis_to_excel(results)
 

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form, B
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from db import SessionLocal
-from controllers.regulation import create_regulation, process_regulation, get_regulation_status, extract_and_analyze_vss, save_analysis_to_excel
+from controllers.regulation import create_regulation, process_regulation, get_regulation_status
 from schemas.regulation import RegulationStatus
 from utils.security import get_current_user
 import os
@@ -53,35 +53,3 @@ def check_status(
 
     return {"regulation_id": regulation_id, "embedding_status": status}
 
-@router.post("/analysis/start", dependencies=[Depends(get_current_user)])
-
-def start_analysis(
-    vss_file: UploadFile = File(...),
-    regulation_id: int = Form(...),
-    db: Session = Depends(get_db)
-):
-    status = get_regulation_status(db, regulation_id)
-
-    if status != "completed":
-        raise HTTPException(status_code=400, detail="Regulation embeddings not ready")
-
-    vss_file_path = f"vss_uploads/{uuid.uuid4()}_{vss_file.filename}"
-    os.makedirs("vss_uploads", exist_ok=True)
-
-    with open(vss_file_path, "wb") as f:
-        f.write(vss_file.file.read())
-    results = extract_and_analyze_vss(vss_file_path, regulation_id, db)
-
-    if results is None:
-        raise HTTPException(status_code=500, detail="Failed to analyze VSS document.")
-
-    output_file = save_analysis_to_excel(results)
-
-    if output_file is None:
-        raise HTTPException(status_code=500, detail="Failed to generate Excel report.")
-
-    return FileResponse(
-        output_file,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        filename="benchmark_results.xlsx"
-    ) 
