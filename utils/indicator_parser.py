@@ -1,3 +1,7 @@
+# This file has been split for clarity.
+# See utils/file_extraction.py for file extraction functions.
+# See utils/indicator_parsing.py for indicator parsing and LLM logic.
+
 import fitz 
 from docx import Document as DocxDocument
 from typing import List

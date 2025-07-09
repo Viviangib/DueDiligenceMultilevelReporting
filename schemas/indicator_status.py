@@ -1,14 +1,12 @@
 from pydantic import BaseModel
-from datetime import datetime
+from typing import Optional
+from enums.indicator import IndicatorStatusEnum
 
-class IndicatorStatusBase(BaseModel):
-    status: str
-
-class IndicatorStatusCreate(IndicatorStatusBase):
-    pass
-
-class IndicatorStatusOut(IndicatorStatusBase):
+class IndicatorStatusSchema(BaseModel):
     id: int
-    created_at: datetime
+    status: IndicatorStatusEnum
+    created_at: Optional[str]
+    file: Optional[str]
+
     class Config:
-        from_attributes = True 
+        orm_mode = True 
