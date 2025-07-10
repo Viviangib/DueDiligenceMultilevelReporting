@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, JSON
+from sqlalchemy import Column, Integer, String
 from db import Base
 
 class Indicator(Base):
     __tablename__ = "indicators"
     id = Column(Integer, primary_key=True, index=True)
-    indicator = Column(JSON, nullable=False) 
+    indicator_id = Column(String, nullable=False)
+    indicator = Column(String, nullable=False) 

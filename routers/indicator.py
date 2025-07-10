@@ -6,15 +6,10 @@ from controllers.indicator import (
     start_indicator_extraction,
     get_indicator_status_controller,
 )
+from db.db import get_db
 
 router = APIRouter(prefix="/indicators", tags=["indicators"])
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 @router.post("/extract")
 def extract_indicators(
@@ -30,3 +25,11 @@ def get_indicator_status(
     db: Session = Depends(get_db)
 ):
     return get_indicator_status_controller(status_id, db)
+
+@router.post("/upload")
+def upload_indicators(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    from controllers.indicator import upload_indicators_from_excel
+    return upload_indicators_from_excel(file, db)

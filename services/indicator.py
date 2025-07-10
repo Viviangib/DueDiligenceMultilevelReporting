@@ -5,7 +5,10 @@ from models.indicator_status import IndicatorStatus
 
 class IndicatorService:
     def save_indicator(self, db: Session, indicator_data: dict) -> Indicator:
-        indicator = Indicator(indicator=indicator_data)
+        indicator = Indicator(
+            indicator_id=indicator_data["indicator_id"],
+            indicator=indicator_data["indicator"]
+        )
         db.add(indicator)
         db.commit()
         db.refresh(indicator)
