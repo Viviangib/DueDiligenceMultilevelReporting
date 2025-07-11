@@ -7,7 +7,8 @@ class IndicatorService:
     def save_indicator(self, db: Session, indicator_data: dict) -> Indicator:
         indicator = Indicator(
             indicator_id=indicator_data["indicator_id"],
-            indicator=indicator_data["indicator"]
+            indicator=indicator_data["indicator"],
+            process_id=indicator_data["process_id"]
         )
         db.add(indicator)
         db.commit()

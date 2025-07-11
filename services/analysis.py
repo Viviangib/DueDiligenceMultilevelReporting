@@ -37,18 +37,17 @@ class AnalysisService:
             db.commit()
             logger.info(f"Updated analysis {analysis_id} to status {status}")
 
-    async def run_analysis(self, db: Session, vss_paths: list[str], analysis_id: int) -> None:
+    async def run_analysis(self, db: Session, vss_paths: list[str], analysis_id: int, process_id: str) -> None:
         try:
             logger.info("Starting analysis service")
 
-
             indicators = (
                 db.query(Indicator)
-                .limit(3)  
-                .all()       
+                .filter(Indicator.process_id == process_id)
+                .all()
             )
             if not indicators:
-                raise Exception("No indicators found in DB.")
+                raise Exception("No indicators found in DB for this process_id.")
 
             # 2. Read all VSS text
             vss_texts = []
@@ -70,28 +69,13 @@ class AnalysisService:
             results = []
 
             for idx, indicator_obj in enumerate(indicators):
-                raw_indicator = indicator_obj.indicator
-                logger.info(f"Raw indicator: {raw_indicator} (type: {type(raw_indicator)})")
-
-                if isinstance(raw_indicator, str):
-                    try:
-                        parsed = json.loads(raw_indicator)
-                    except Exception as e:
-                        logger.error(f"Failed to parse indicator JSON: {e}")
-                        parsed = {}
-                elif isinstance(raw_indicator, dict):
-                    parsed = raw_indicator
-                else:
-                    logger.error(f"Unexpected type for indicator: {type(raw_indicator)}")
-                    parsed = {}
-
-                indicator_id = parsed.get("ID", f"IND{idx+1:03d}")
-                question = parsed.get("Question", str(parsed))
+                indicator_id = str(indicator_obj.indicator_id)
+                question = str(indicator_obj.indicator)
 
                 evidence = rag_search(str(question))
 
                 # Prompt for GPT
-                prompt= analysis_prompt(alignment_def,indicator_id,vss_texts,question,evidence)
+                prompt= analysis_prompt(alignment_def, indicator_id, vss_texts, question, evidence)
 
                 content = await openai_client.chat(prompt)
 

@@ -26,9 +26,10 @@ def get_db():
 def run_analysis(
     background_tasks: BackgroundTasks,
     vss_files: list[UploadFile] = File(...),
+    process_id: str = File(...),
     db: Session = Depends(get_db),
 ):
-    return start_analysis_extraction(background_tasks, vss_files, db)
+    return start_analysis_extraction(background_tasks, vss_files, process_id, db)
 
 @router.get("/{analysis_id}", response_model=AnalysisOut)
 def get_analysis_status(

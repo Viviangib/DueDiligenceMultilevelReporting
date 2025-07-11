@@ -18,6 +18,7 @@ from utils.file_extraction import extract_text_from_pdf_bytes, extract_text_from
 from utils.indicator_parsing import parse_indicators_with_llm
 import logging
 from db import SessionLocal
+import uuid
 
 indicator_service = IndicatorService()
 logger = logging.getLogger(__name__)
@@ -93,12 +94,13 @@ def upload_indicators_from_excel(file: UploadFile, db: Session):
     required_columns = {"Indicator ID", "Indicator"}
     if not required_columns.issubset(df.columns):
         raise HTTPException(status_code=400, detail="Excel must have columns: 'Indicator ID' and 'Indicator'")
+    process_id = str(uuid.uuid4())
     for _, row in df.iterrows():
         indicator_id = str(row["Indicator ID"]).strip()
         indicator = str(row["Indicator"]).strip()
         if indicator_id and indicator:
-            indicator_service.save_indicator(db, {"indicator_id": indicator_id, "indicator": indicator})
-    return {"message": "Indicators uploaded successfully."}
+            indicator_service.save_indicator(db, {"indicator_id": indicator_id, "indicator": indicator, "process_id": process_id})
+    return {"message": "Indicators uploaded successfully.", "process_id": process_id}
 
 def get_indicator_status_controller(status_id: int, db: Session):
     status_job = db.query(IndicatorStatus).filter(IndicatorStatus.id == status_id).first()
