@@ -1,4 +1,3 @@
-
 from typing import Union, List, Dict
 
 def analysis_prompt(
@@ -7,55 +6,59 @@ def analysis_prompt(
     vss_texts: Union[str, List[str]],
     question: str,
     evidence: Union[str, List[str]]
-
 ) -> str:
 
-    analysis_prompt=f"""
-        You are a regulatory compliance expert specializing in law, ESG, and sustainability standards.
-        You are evaluating whether specific indicators from a voluntary sustainability standard (VSS) conform to the requirements of a sustainability-related regulation (retrieved from RAG).
-        You will be given:
-        - an **Indicator** from the VSS (sometimes phrased as a question)
-        - **Supporting Documents**: content of the VSS standard uploaded by the user
-        - **Evidence from RAG**: relevant passages retrieved from the regulation (stored in a knowledge base)
+    analysis_prompt = f"""
+        You are a regulatory compliance expert specializing in law, ESG, and sustainability standards. 
+        Your task is to evaluate whether specific indicators from a voluntary sustainability standard (VSS) 
+        align with the requirements of a sustainability-related regulation.
 
-        Your task is to:
-        - Rephrase the indicator into a clear positive statement if necessary.
-        - Review the Supporting Documents and Regulatiions (RAG has the regulations)
-        - Determine how well the indicator aligns with the regulation (results from RAG), based on the provided evidence(Supporting Documents).
-        - Choose the most appropriate alignment category from the provided definitions.
-        - Justify your choice with specific evidence and citations.
+        You are provided with:
+        - An **Indicator** from the VSS: This is a statement or question that needs to be assessed.
+        - **Supporting Documents** from the VSS: These provide context and explanation for the indicator.
+        - **Evidence from the Regulation**: These are relevant passages from the regulatory text that pertain to the indicator.
 
-        Do NOT speculate or invent information. If evidence is insufficient or missing, state that clearly.
-        Be factual, concise, and rigorous in your analysis.
+        Your goal is to assess how well the indicator, as explained by the supporting documents, meets the requirements 
+        specified in the regulation.
 
-        You are given the following indicator:
+        Follow these steps:
+        1. **Rephrase the Indicator (if necessary)**: If the indicator is phrased as a question, rephrase it into a clear positive statement. 
+           If it is already a statement, proceed as is.
+        2. **Understand the Indicator's Context**: Use the supporting documents to gain a full understanding of the indicator's intent and requirements. 
+           Focus on information that directly relates to the indicator and avoid inferring additional requirements not explicitly stated.
+        3. **Compare to the Regulation**: Using the evidence from the regulation, determine how well the indicator (with its context from the supporting documents) 
+           aligns with the regulatory requirements.
+        4. **Determine Alignment Level**: Based on your comparison, select the most appropriate alignment category from the provided definitions.
+        5. **Justify Your Choice**: Provide a clear justification for your alignment category, citing specific evidence from both the supporting documents and the regulation.
 
-        You are given the following Indicator from a voluntary sustainability standard (VSS):
+        **Important Rules**:
+        - **Evidence Citation**: If the alignment category is "Partially aligned," "Mostly aligned," or "Fully aligned," you must include at least one citation from the regulation in your evidence. 
+          For "Not aligned/Not covered" or "Not applicable," you may cite only from the supporting documents if necessary.
+        - **Accuracy in Justification**: Ensure that your justification accurately refers to the requirements of the regulation and the content of the VSS indicator and supporting documents. 
+          Do not confuse or misrefer the two.
+        - **Handling Insufficient Evidence**: If the evidence from the supporting documents or the regulation is unclear or insufficient to make a determination, 
+          state this clearly in your justification and choose the alignment category that best reflects the available information.
 
-
-        You are also provided with the following information:
-        -
-
-        Alignment Definitions:
+        **Alignment Definitions**:
         {alignment_def}
 
-        Criteria ID: {indicator_id}
-        Type: Statement
-        Indicator: {question}
+        **Indicator Details**:
+        - Criteria ID: {indicator_id}
+        - Type: Statement
+        - Indicator: {question}
 
-        Supporting Documents (from the VSS): {vss_texts}
+        **Supporting Documents (from the VSS)**: {vss_texts}
+
+        **Evidence from the Regulation**: {evidence}
+
+        **For this indicator, provide the following in your response:
         
-        - Results from Regulation (RAG results): {evidence}
+        STATEMENT: <rephrased indicator if necessary, otherwise the original>
+        EVIDENCE: <quote relevant evidence from supporting documents and regulation>
+        CITATIONS: <list the source and location of each evidence>
+        ALIGNMENT CATEGORY: <chosen category>
+        JUSTIFICATION: <detailed justification>
 
-        Alignment Definitions: {alignment_def}
-
-        For this indicator, provide the following in your response:
-
-        (1) STATEMENT: <repeat the indicator as a positive statement>
-        (2) EVIDENCE: <quote relevant evidence from the supporting documents that alligns with the regulations >
-        (3) CITATIONS: <list the source and location of each evidence>
-        (4) ALIGNMENT CATEGORY: <choose from alignment_def>
-        (5) JUSTIFICATION: <justify the alignment category>
 
         Format your response as:
         STATEMENT: ...
@@ -63,14 +66,8 @@ def analysis_prompt(
         CITATIONS: ...
         ALIGNMENT CATEGORY: ...
         JUSTIFICATION: ...
+
+
         """
 
     return analysis_prompt
-
-
-
-
-
-
-
-

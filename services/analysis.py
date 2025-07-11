@@ -44,7 +44,7 @@ class AnalysisService:
             indicators = (
                 db.query(Indicator)
                 .filter(Indicator.process_id == process_id)
-                .all()
+                .limit(10)
             )
             if not indicators:
                 raise Exception("No indicators found in DB for this process_id.")
