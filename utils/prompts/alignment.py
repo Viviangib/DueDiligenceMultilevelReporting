@@ -1,23 +1,23 @@
 
 alignment_def = {
     "Not applicable": {
-        "Definition": "This requirement in the regulation is not applicable for the sector or commodity defined by the scope or intended use of the benchmarked standard. In certain cases, the topic may be pertinent only in exceptional circumstances and in such instances, we may still classify it as not applicable.",
+        "Definition": " The regulation does not address the topic of this indicator of the assessed framework OR this indicator is out of scope of the regulation.",
         "Implication": ""
     },
     "Not aligned/Not covered": {
-        "Definition": "This requirement in the regulation is not included in the assessed standard. Or this core topic of the criteria is not covered.",
+        "Definition": "This indicator of the assessed framework is required by the regulation, but it is missing in the assessed framework. OR the indicator of the assessed framework is required by the regulation, however, it contradicts the regulation.",
         "Implication": "The requirements in the assessed standard are not present. Need to be reviewed or included."
     },
     "Partially aligned": {
-        "Definition": "The assessed standard includes requirements similar to this regulatory criterion, but to a limited or substantially lower extent or rigour. Essential components necessary to fulfil the intent are absent, and should be given further consideration. A critical aspect of the regulatory criterion is missing.",
+        "Definition": "This indicator of the assessed framework includes requirements similar to the regulation, but to a limited or substantially lower extent. For example,essential components necessary to fulfill the intent of the regulation is absent and critical aspects of the regulation are missing.",
         "Implication": "Some aspects are missing and need to be reviewed."
     },
     "Mostly aligned": {
-        "Definition": "This requirement in the regulation is fully included or aligned with the assessed standard, with minor aspects different (either more stringent or less stringent). The intent of this regulatory requirement is adequately addressed. While variances or omissions may arise in individual indicators, the overarching purpose of the relevant criteria is duly recognised in the benchmarked standard.",
+        "Definition": "This indicator of the assessed framework is mostly covered by the requirements in the regulation, with minor aspects different extent (either slightly more stringent or slightly less stringent). The intent of this indicator is adequately mentioned and the overarching purpose of the indicator is duly recognized in the regulation",
         "Implication": "Considered to be covered by the benchmarked standard, and only minor aspects are different or missing."
     },
     "Fully aligned": {
-        "Definition": "This requirement in the regulation is equivalent to the indicator in the assessed standard, covering the same scope and extent without deviation.",
+        "Definition": "This indicator of the assessed framework fully matches or is equivalent to requirements in the regulation, covering the same scope and extent without deviation.",
         "Implication": "The requirement in the assessed standard is equivalent to this regulatory criterion. Considered to be fully covered by the benchmarked standard."
     }
 }

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from models.indicator import Indicator
 from utils.prompts.alignment import alignment_def
 from utils.prompts.analysis import analysis_prompt
+from utils.prompts.report import report_generation_prompt
 from vector_store.pinecone_store import rag_search
 from openai import AsyncOpenAI
 import uuid
@@ -37,6 +38,63 @@ class AnalysisService:
             db.commit()
             logger.info(f"Updated analysis {analysis_id} to status {status}")
 
+    async def generate_summary_report(
+        self, 
+        excel_file_path: str,
+        standard_name: str = "User Standard",
+        standard_version: str = "1.0", 
+        standard_year: str = "2024",
+        organization: str = "User Organization"
+    ) -> str:
+        """
+        Generate a comprehensive summary report from analysis Excel file.
+        
+        Args:
+            excel_file_path: Path to the Excel file containing analysis results
+            standard_name: Name of the benchmarked standard
+            standard_version: Version of the standard
+            standard_year: Year of publication
+            organization: Name of the founding organization
+            
+        Returns:
+            Path to the generated report file
+        """
+        try:
+            logger.info(f"Starting report generation for file: {excel_file_path}")
+            
+            # Read the Excel file
+            df = pd.read_excel(excel_file_path)
+            logger.info(f"Loaded Excel file with {len(df)} rows and {len(df.columns)} columns")
+            
+            # Convert DataFrame to string representation for GPT
+            analysis_data = df.to_string(index=False, max_rows=None, max_colwidth=None)
+            
+            # Generate report using GPT
+            prompt = report_generation_prompt(
+                analysis_data=analysis_data,
+                standard_name=standard_name,
+                standard_version=standard_version,
+                standard_year=standard_year,
+                organization=organization
+            )
+            
+            logger.info("Sending report generation request to GPT")
+            report_content = await openai_client.chat(prompt,max_tokens=16384)
+            
+            # Save report to file
+            report_filename = f"results/summary_report_{uuid.uuid4()}.md"
+            os.makedirs("results", exist_ok=True)
+            
+            with open(report_filename, "w", encoding="utf-8") as f:
+                f.write(report_content)
+            
+            logger.info(f"Report generated successfully: {report_filename}")
+            return report_filename
+            
+        except Exception as e:
+            logger.error(f"Report generation failed: {str(e)}")
+            raise
+
     async def run_analysis(self, db: Session, vss_paths: list[str], analysis_id: int, process_id: str) -> None:
         try:
             logger.info("Starting analysis service")
@@ -44,7 +102,6 @@ class AnalysisService:
             indicators = (
                 db.query(Indicator)
                 .filter(Indicator.process_id == process_id)
-                .limit(10)
             )
             if not indicators:
                 raise Exception("No indicators found in DB for this process_id.")
