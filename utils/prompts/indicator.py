@@ -3,25 +3,34 @@ INDICATOR_PROMPT = """
 You are an expert assistant specialized in extracting indicators from sustainability, compliance, climate, or ESG-related documents. Your task is to identify and extract all indicators from the provided document content and present them in a standardized JSON format.
 
 
-What are Indicators?
+### What are Indicators?
+Indicators are structured entries used to assess or declare the presence, quality, or commitment to specific environmental, social, or governance practices. They:
+- Are questions (e.g., "Does the project have an ESIA?") or statements (e.g., "The project has an ESIA.") that evaluate a specific, actionable, or measurable condition.
+- Must have an explicit, valid ID directly associated with the question or statement.
+- May include predefined answer options (e.g., Yes/No) and answers, if provided.
 
-Indicators are structured entries used to assess or declare the presence, quality, or commitment to specific environmental, social, or governance practices. They are designed to evaluate whether a specific action, policy, or condition is met within a project, organization, or system. Indicators typically:
-Resemble questions (e.g., "Does the project have an ESIA?") or statements (e.g., "The project has an ESIA.") that assess a specific, actionable, or measurable condition. In case if there  are statements then you must let them be
-
-
-Include one or more of the following:
-
-
-Unique Identifiers (IDs): Codes like "E1.FG3" or "1.1.1" to distinguish the indicator.
-Questions or Statements: Core text describing what is being assessed or declared, implying an action, commitment, or outcome.
-Answer Options: Predefined response choices (e.g., Yes/No, Multi-select, Text).
-Answers: The actual response provided, if available.
-
+### Valid IDs
 Valid IDs must:
-✅ Be explicitly present in the document text.
+✅ Be explicitly present in the document text, directly adjacent to or within the same structural element (e.g., table row, list item, or paragraph) as the indicator's question or statement.
 ✅ Match one of these patterns:
-   - Numbers in hierarchical format: e.g., 1.1, 1.1.1, 2.3.4
-   - Letters and numbers combined: e.g., E1.FG3, A-12
+   - Hierarchical numbers: e.g., 1.1, 1.1.1, 2.3.4 (must include at least one dot).
+   - Letter-number combinations: e.g., E1.FG3, A-12, G4.2.
+✅ Be clearly tied to an assessable condition (e.g., a question or statement about a policy, action, or outcome).
+
+Invalid IDs:
+❌ Single numbers (e.g., 3, 8, 5) or standalone letters (e.g., A, B).
+❌ Document metadata, version numbers (e.g., V1.4EN), or unrelated codes (e.g., A-1-S-B-F).
+❌ IDs not directly associated with a question or statement (e.g., table row numbers, section labels).
+
+
+### What are NOT Indicators?
+Exclude content that:
+- Defines categories or terms (e.g., "HCV1: Species Diversity: Concentrations of biodiversity...") without assessing an action or outcome.
+- Lacks a question or statement tied to an assessable condition (e.g., a table listing "Country" without a related question).
+- Is narrative, background, or descriptive text without a measurable outcome.
+- Lacks an explicit, valid ID directly tied to the question or statement.
+
+
 
 IDs must not be generic words, placeholders, or fabricated by the assistant must be excluded. Dont make an ID out of anything. 
 Make sure you dont create one for a statement you think might follow the indicator criteria.
@@ -44,44 +53,40 @@ They imply an assessable condition (e.g., a policy exists, an action is taken, a
 They are often tied to compliance, performance, or commitment in sustainability or ESG contexts.
 They are actionable or measurable, meaning they can be evaluated with a response (e.g., Yes/No, text description, or evidence).
 
-What are NOT Indicators:
 
-Descriptive MissDescriptive categories or definitions (e.g., "HCV1: Species Diversity: Concentrations of biodiversity...") that define terms or concepts without assessing a specific action or commitment.
+### Extraction Guidelines
+1. **Identify Indicators**:
+   - Look for sections, tables, lists, or paragraphs containing questions or statements assessing specific actions, commitments, or conditions related to sustainability, compliance, or ESG topics.
+   - Ensure the content implies an assessable condition (e.g., "The project has a plan" or "Does the project have a plan?").
+   - Only extract indicators with an explicit, valid ID in the same structural element (e.g., same table row, list item, or paragraph).
 
-General information (e.g., tables listing "Country or region" without a question or statement).
-Narrative descriptions or background context that don’t imply a measurable outcome.
+2. **Extract Fields**:
+   - **ID**: Extract the exact ID as it appears, ensuring it matches the valid patterns and is directly tied to the indicator. Do not infer, fabricate, or reassign IDs from other parts of the document.
+   - **Question/Statement**: Extract the core text. Rephrase questions as positive statements (e.g., "Does the project comply?" → "The project complies."). Use statements as-is.
+   - **Answer Options**: Extract predefined response choices (e.g., ["Yes", "No"]). Use [] if none are specified.
+   - **Answer**: Extract the provided answer, if any. Use null if missing.
 
-Your goal is to intelligently extract only valid indicators, inferring appropriate fields even when the structure is not explicitly defined. Do not skip any valid indicators, but exclude entries that don’t meet the indicator criteria. If a field is missing, use null or an empty string/array as appropriate.
+3. **Handle Variations**:
+   - Map varying column names (e.g., "Field," "Declaration") to standard fields (ID, Question, Answer Options, Answer) based on context.
+   - Capture nested indicators (e.g., "1.1.1" under "Criterion 1.1").
+   - Include incomplete indicators if they meet the criteria (e.g., have a valid ID and question/statement).
 
-
-
-Extraction Guidelines
-
-Identify Indicators:
-
-Look for sections, tables, lists, or paragraphs that contain questions or statements assessing specific actions, commitments, or conditions related to sustainability, compliance, or ESG topics.
-
-Ensure the content implies an assessable condition (e.g., "The project has a plan" or "Does the project have a plan?").
-
-
-Exclude content that:
-
-Defines categories or terms (e.g., "HCV1: Species Diversity...") without assessing an action or outcome.
-
-Lacks a clear question or statement tied to an assessable condition (e.g., a table listing "Country" without a related question).
+4. **Deduplication**:
+   - Remove duplicates by comparing both ID and Question (case-insensitive, normalized text). Keep only the first instance of an indicator with identical ID and Question
 
 
 Infer Fields:
 
-ID: Extract any code or number that uniquely identifies the indicator (e.g., "E1.FG3", "1.1.1").ID field cant be null. Dont make any ID field value of your own 
+ID: Only extract indicators that have an explicit, adjacent ID clearly visible in the document (in the same line, heading, table row, or directly preceding/following the indicator text).
+If no such ID is present, do not extract the indicator. Indicators without an ID are not considered valid and must be ignored.
+Never fabricate, guess, or infer an ID, and never associate an ID from elsewhere in the document.
 
-Question/Statement: Extract the core text. Rephrase questions into positive statements. Use the statement as-is if already declarative.
+Question/Statement: Extract the core text. Rephrase questions into positive statements. No need to rephrase if the extracted text is already a statement, only rephrae if its a question.
 
 Answer Options: Identify predefined response types (e.g., Yes/No, Multi-select). Use [] if none are specified.
 
 Answer: Extract the provided answer, if any. Use null or - if missing.
 
-Handle Variations:
 
 
 Column names may vary (e.g., "Field," "Declaration"). Map them to standard fields (ID, Question, Answer Options, Answer) using context.
@@ -98,43 +103,6 @@ Similary If indicators are statements, then proceed to the next step
 
 
 Ensure Completeness:
-Extract all valid indicators. Do not limit to a subset.
-
-Return [] if no valid indicators are found.
-Validate Output:
-
-Ensure a valid JSON array of objects with keys: "ID", "Question", "Answer Options", "Answer".
-
-Use consistent formatting and escape special characters.
-
-Look for sections, tables, lists, or paragraphs that discuss assessment criteria, requirements, or declarations related to sustainability, compliance, or ESG topics.
-Indicators often have a unique identifier, a descriptive question or statement, and possibly answer options or answers.
-Ignore content that lacks a clear question or statement tied to an assessable condition (e.g., a table listing "Country or region" with no associated question).
-
-Infer Fields:
-
-ID: Extract any code or number that uniquely identifies the indicator (e.g., "E1.FG3", "1.1.1"). If not present, dont associate a random id and make an indicator out of nothing
-Question/Statement: Extract the core text describing what is being assessed. If phrased as a question, rephrase it into a positive statement. If it’s a statement, use it as-is.
-Answer Options: Identify any predefined choices or response types (e.g., Yes/No, Multi-select). If not specified, use an empty array [].
-Answer: Extract the provided answer, if available. If not, use null or -.
-
-
-Handle Variations:
-
-Column names may differ (e.g., "Field," "Declaration," "Assessment"). Use context to map them to the standard fields (ID, Question, Answer Options, Answer).
-Indicators might be nested under criteria or sections (e.g., "Criterion 1.1" with sub-indicators "1.1.1"). Capture all levels.
-Some indicators may lack certain fields. Include them in the output with available data.
-
-
-Rephrase Questions:
-
-If the indicator is a question, rewrite it as a positive statement for consistency.
-Example:
-Question: "Does the project comply with biodiversity strategies?"
-Statement: "The project complies with biodiversity strategies."
-
-
-Ensure Completeness:
 
 Extract all indicators from the document. Do not limit to a subset.
 If no valid indicators are found, return an empty JSON array: [].
@@ -146,6 +114,7 @@ Ensure the output is a valid JSON array of objects.
 Each object must have the keys: "ID", "Question", "Answer Options", "Answer".
 Use consistent formatting and escape special characters properly.
 
+Remove duplicates: If two indicators have the same "ID" and identical "Question", include only one instance in the output. Do not repeat the same indicator.
 
 
 Examples

@@ -70,8 +70,10 @@ class AnalysisService:
             analysis_data = df.to_string(index=False, max_rows=None, max_colwidth=None)
             
             # Generate report using GPT
+            num_indicators = len(df)
             prompt = report_generation_prompt(
                 analysis_data=analysis_data,
+                num_indicators=num_indicators,
                 standard_name=standard_name,
                 standard_version=standard_version,
                 standard_year=standard_year,
@@ -79,7 +81,7 @@ class AnalysisService:
             )
             
             logger.info("Sending report generation request to GPT")
-            report_content = await openai_client.chat(prompt,max_tokens=16384)
+            report_content = await openai_client.chat(prompt)
             
             # Save report to file
             report_filename = f"results/summary_report_{uuid.uuid4()}.md"
