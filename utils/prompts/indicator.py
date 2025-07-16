@@ -62,7 +62,7 @@ They are actionable or measurable, meaning they can be evaluated with a response
 
 2. **Extract Fields**:
    - **ID**: Extract the exact ID as it appears, ensuring it matches the valid patterns and is directly tied to the indicator. Do not infer, fabricate, or reassign IDs from other parts of the document.
-   - **Question/Statement**: Extract the core text. Rephrase questions as positive statements (e.g., "Does the project comply?" → "The project complies."). Use statements as-is.
+   - **Question/Statement**: Extract the core text. Rephrase questions as positive statements (e.g., "Does the project comply?" → "The project complies."). Use statements as-is. No need to rephrase if the extracted text is already a statement, only rephrae if its a question
    - **Answer Options**: Extract predefined response choices (e.g., ["Yes", "No"]). Use [] if none are specified.
    - **Answer**: Extract the provided answer, if any. Use null if missing.
 
