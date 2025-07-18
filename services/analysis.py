@@ -72,7 +72,7 @@ async def process_gpt_batch(
         return batch_index, []  # Explicit return for all code paths
 
     # Split batch into smaller chunks
-    chunk_size = 5
+    chunk_size = 3
     batches = [batch[i:i + chunk_size] for i in range(0, len(batch), chunk_size)]
     logger.info(f"Created {len(batches)} sub-batches for {len(batch)} indicators")
 
