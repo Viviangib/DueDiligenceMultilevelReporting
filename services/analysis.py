@@ -199,7 +199,7 @@ class AnalysisService:
             logger.error(f"Report generation failed: {str(e)}")
             raise
 
-    async def run_analysis(self, db: Session, vss_paths: List[str], analysis_id: int, process_id: str) -> None:
+    async def run_analysis(self, db: Session, vss_paths: List[str], analysis_id: int, process_id: str, namespace: str) -> None:
         try:
             start_time = datetime.datetime.now()
             logger.info(f"Starting analysis service at {start_time}")
@@ -223,6 +223,8 @@ class AnalysisService:
                     vss_texts.append(text)
 
             # Prepare all indicator batches concurrently
+            from vector_store.pinecone_store import RAGSearcher
+            rag_searcher = RAGSearcher(namespace=namespace)
             async def fetch_evidence(indicator_obj):
                 indicator_id = str(indicator_obj.indicator_id)
                 question = str(indicator_obj.indicator)

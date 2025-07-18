@@ -17,7 +17,10 @@ import logging
 analysis_service = AnalysisService()
 logger = logging.getLogger(__name__)
 
-def start_analysis_extraction(background_tasks: BackgroundTasks, vss_files: list[UploadFile], process_id: str, db: Session):
+def start_analysis_extraction(background_tasks: BackgroundTasks, vss_files: list[UploadFile], process_id: str, db: Session, namespace: str):
+    from vector_store.pinecone_store import namespace_exists
+    if not namespace_exists(namespace):
+        raise HTTPException(status_code=400, detail=f"Pinecone namespace '{namespace}' does not exist.")
     vss_paths = []
     for file in vss_files:
         if not file.filename:
@@ -33,7 +36,7 @@ def start_analysis_extraction(background_tasks: BackgroundTasks, vss_files: list
         vss_paths.append(path)
     analysis = analysis_service.create_analysis(db)
     analysis_id = int(getattr(analysis, 'id'))
-    background_tasks.add_task(analysis_service.run_analysis, db, vss_paths, analysis_id, process_id)
+    background_tasks.add_task(analysis_service.run_analysis, db, vss_paths, analysis_id, process_id, namespace)
     return {"analysis_id": analysis_id, "message": "Analysis started. Check status with GET /analysis/{analysis_id}"}
 
 def get_analysis_status_controller(analysis_id: int, db: Session):

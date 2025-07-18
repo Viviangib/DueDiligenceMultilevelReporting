@@ -1,7 +1,7 @@
 import logging
 import os
 import uuid
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends, Form
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends, Form, Query
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from db import SessionLocal
@@ -31,9 +31,14 @@ def run_analysis(
     background_tasks: BackgroundTasks,
     vss_files: list[UploadFile] = File(...),
     process_id: str = File(...),
+    namespace: str = Form(..., description="Pinecone namespace to use for RAG search"),
     db: Session = Depends(get_db),
 ):
-    return start_analysis_extraction(background_tasks, vss_files, process_id, db)
+    from vector_store.pinecone_store import namespace_exists
+    if not namespace_exists(namespace):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail=f"Pinecone namespace '{namespace}' does not exist.")
+    return start_analysis_extraction(background_tasks, vss_files, process_id, db, namespace)
 
 @router.get("/{analysis_id}", response_model=AnalysisOut, dependencies=[Depends(get_current_user)])
 def get_analysis_status(
