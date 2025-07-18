@@ -11,6 +11,7 @@ from controllers.analysis import (
     generate_report_controller,
 )
 from schemas.analysis import AnalysisOut
+from utils.security import get_current_user
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -25,7 +26,7 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/run")
+@router.post("/run", dependencies=[Depends(get_current_user)])
 def run_analysis(
     background_tasks: BackgroundTasks,
     vss_files: list[UploadFile] = File(...),
@@ -34,14 +35,14 @@ def run_analysis(
 ):
     return start_analysis_extraction(background_tasks, vss_files, process_id, db)
 
-@router.get("/{analysis_id}", response_model=AnalysisOut)
+@router.get("/{analysis_id}", response_model=AnalysisOut, dependencies=[Depends(get_current_user)])
 def get_analysis_status(
     analysis_id: int,
     db: Session = Depends(get_db)
 ):
     return get_analysis_status_controller(analysis_id, db)
 
-@router.post("/generate-report")
+@router.post("/generate-report", dependencies=[Depends(get_current_user)])
 async def generate_summary_report(
     excel_file_path: str = Form(..., description="Path to the Excel file containing analysis results"),
     standard_name: str = Form("User Standard", description="Name of the benchmarked standard"),
@@ -71,7 +72,7 @@ async def generate_summary_report(
         organization=organization
     )
 
-@router.post("/generate-report-upload")
+@router.post("/generate-report-upload", dependencies=[Depends(get_current_user)])
 async def generate_summary_report_from_upload(
     excel_file: UploadFile = File(..., description="Excel file containing analysis results"),
     standard_name: str = Form("User Standard", description="Name of the benchmarked standard"),

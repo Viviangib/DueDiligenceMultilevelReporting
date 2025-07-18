@@ -7,11 +7,12 @@ from controllers.indicator import (
     get_indicator_status_controller,
 )
 from db.db import get_db
+from utils.security import get_current_user
 
 router = APIRouter(prefix="/indicators", tags=["indicators"])
 
 
-@router.post("/extract")
+@router.post("/extract", dependencies=[Depends(get_current_user)])
 def extract_indicators(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
@@ -19,14 +20,14 @@ def extract_indicators(
 ):
     return start_indicator_extraction(background_tasks, file, db)
 
-@router.get("/extract/status/{status_id}")
+@router.get("/extract/status/{status_id}", dependencies=[Depends(get_current_user)])
 def get_indicator_status(
     status_id: int,
     db: Session = Depends(get_db)
 ):
     return get_indicator_status_controller(status_id, db)
 
-@router.post("/upload")
+@router.post("/upload", dependencies=[Depends(get_current_user)])
 def upload_indicators(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
