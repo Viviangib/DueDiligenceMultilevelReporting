@@ -94,8 +94,8 @@ Follow these steps for each indicator:
    If it is already a statement, proceed as is.
 2. **Understand the Indicator's Context**: Use the supporting documents to gain a full understanding of the indicator's intent and requirements. 
    Focus on information that directly relates to the indicator and avoid inferring additional requirements not explicitly stated.
-3. **Compare to the Regulation**: Using the evidence from the regulation, determine how well the indicator (with its context from the supporting documents) 
-   aligns with the regulatory requirements.
+3. **Compare to the Regulation**: Using the evidence from the regulation, determine how well the indicator — as fully explained and contextualized by the supporting VSS documents — aligns with the regulatory requirements.
+
 4. **Determine Alignment Level**: Based on your comparison, select the most appropriate alignment category from the provided definitions.
 5. **Justify Your Choice**: Provide a clear justification for your alignment category, citing specific evidence from both the supporting documents and the regulation.
 
