@@ -1,1 +1,0 @@
-GPT-4 analysis failed: Error code: 400 - {'error': {'message': 'max_tokens is too large: 128000. This model supports at most 16384 completion tokens, whereas you provided 128000.', 'type': 'invalid_request_error', 'param': 'max_tokens', 'code': 'invalid_value'}}
