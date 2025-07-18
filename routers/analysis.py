@@ -42,37 +42,8 @@ def get_analysis_status(
 ):
     return get_analysis_status_controller(analysis_id, db)
 
-@router.post("/generate-report", dependencies=[Depends(get_current_user)])
-async def generate_summary_report(
-    excel_file_path: str = Form(..., description="Path to the Excel file containing analysis results"),
-    standard_name: str = Form("User Standard", description="Name of the benchmarked standard"),
-    standard_version: str = Form("1.0", description="Version of the standard"),
-    standard_year: str = Form("2024", description="Year of publication"),
-    organization: str = Form("User Organization", description="Name of the founding organization")
-):
-    """
-    Generate a comprehensive benchmarking summary report from analysis Excel file.
-    
-    This endpoint takes an Excel file containing analysis results and generates
-    a professional benchmarking summary report following the GIB template format.
-    
-    The report includes:
-    - General information about the standard
-    - Abbreviations and definitions
-    - Benchmarking results with alignment levels
-    - Preliminary benchmarking summary
-    - Recommendations and potential gaps
-    - References and appendices
-    """
-    return await generate_report_controller(
-        excel_file_path=excel_file_path,
-        standard_name=standard_name,
-        standard_version=standard_version,
-        standard_year=standard_year,
-        organization=organization
-    )
 
-@router.post("/generate-report-upload", dependencies=[Depends(get_current_user)])
+@router.post("/generate-report", dependencies=[Depends(get_current_user)])
 async def generate_summary_report_from_upload(
     excel_file: UploadFile = File(..., description="Excel file containing analysis results"),
     standard_name: str = Form("User Standard", description="Name of the benchmarked standard"),
