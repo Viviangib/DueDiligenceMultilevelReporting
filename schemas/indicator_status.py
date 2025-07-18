@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 from enums.indicator import IndicatorStatusEnum
 
+
 class IndicatorStatusSchema(BaseModel):
     id: int
     status: IndicatorStatusEnum
@@ -9,4 +10,4 @@ class IndicatorStatusSchema(BaseModel):
     file: Optional[str]
 
     class Config:
-        orm_mode = True 
+        orm_mode = True

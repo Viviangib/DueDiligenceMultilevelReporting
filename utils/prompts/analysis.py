@@ -2,12 +2,13 @@ from typing import Union, List, Dict
 import re
 import json
 
+
 def analysis_prompt(
     alignment_def: Union[str, Dict],
     indicator_id: str,
     vss_texts: Union[str, List[str]],
     question: str,
-    evidence: Union[str, List[str]]
+    evidence: Union[str, List[str]],
 ) -> str:
 
     analysis_prompt = f"""
@@ -73,6 +74,7 @@ def analysis_prompt(
         """
 
     return analysis_prompt
+
 
 def build_batch_prompt(batch, alignment_def, vss_texts):
     intro = f"""

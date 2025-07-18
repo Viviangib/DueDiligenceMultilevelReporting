@@ -16,21 +16,18 @@ router = APIRouter(prefix="/indicators", tags=["indicators"])
 def extract_indicators(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     return start_indicator_extraction(background_tasks, file, db)
 
+
 @router.get("/extract/status/{status_id}", dependencies=[Depends(get_current_user)])
-def get_indicator_status(
-    status_id: int,
-    db: Session = Depends(get_db)
-):
+def get_indicator_status(status_id: int, db: Session = Depends(get_db)):
     return get_indicator_status_controller(status_id, db)
 
+
 @router.post("/upload", dependencies=[Depends(get_current_user)])
-def upload_indicators(
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db)
-):
+def upload_indicators(file: UploadFile = File(...), db: Session = Depends(get_db)):
     from controllers.indicator import upload_indicators_from_excel
+
     return upload_indicators_from_excel(file, db)

@@ -2,7 +2,7 @@
 # See utils/file_extraction.py for file extraction functions.
 # See utils/indicator_parsing.py for indicator parsing and LLM logic.
 
-import fitz 
+import fitz
 from docx import Document as DocxDocument
 from typing import List
 from openai import AsyncOpenAI
@@ -17,7 +17,7 @@ from langchain_core.documents import Document
 from services.openAI.chat import OpenAIClient
 
 
-openai_client=OpenAIClient()
+openai_client = OpenAIClient()
 
 
 def split_text_into_chunks(text: str, chunk_size=3000, chunk_overlap=200) -> list:
@@ -45,7 +45,7 @@ def try_extract_json(content: str) -> List[dict]:
 def extract_text_from_pdf_bytes(file_bytes: bytes) -> str:
     print("🔄 Starting PDF text extraction...")
     print(f"📊 PDF file size: {len(file_bytes)} bytes")
-    
+
     text = ""
     try:
         with fitz.open(stream=file_bytes, filetype="pdf") as doc:
@@ -53,15 +53,17 @@ def extract_text_from_pdf_bytes(file_bytes: bytes) -> str:
             for page_num, page in enumerate(doc, 1):  # type: ignore
                 page_text = page.get_text("text")
                 text += page_text
-                print(f"✅ Extracted text from page {page_num}: {len(page_text)} characters")
-        
+                print(
+                    f"✅ Extracted text from page {page_num}: {len(page_text)} characters"
+                )
+
         print(f"✅ PDF extraction completed successfully!")
         print(f"📝 Total extracted text length: {len(text)} characters")
         print(f"🔤 First 200 characters: {text[:200]}...")
-        
+
     except Exception as e:
         print(f"❌ PDF extraction failed: {e}")
-        
+
     return text
 
 
@@ -91,11 +93,9 @@ async def parse_indicators_with_llm(text: str) -> List[dict]:
         try:
 
             content = await openai_client.chat(
-                prompt=prompt,
-                temperature=0,
-                max_tokens=4000
+                prompt=prompt, temperature=0, max_tokens=4000
             )
-            print("\\n Content is ", content , "\n\n")
+            print("\\n Content is ", content, "\n\n")
 
             if content:
                 indicators = try_extract_json(content)

@@ -1,4 +1,3 @@
-
 alignment_def = """
     "Not applicable": {
         "Definition": " The regulation does not address the topic of this indicator of the assessed framework OR this indicator is out of scope of the regulation.",

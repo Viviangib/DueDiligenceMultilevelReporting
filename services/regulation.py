@@ -17,7 +17,7 @@ import re
 
 from models.regulation import Regulation
 from config import settings
-from vector_store.pinecone import embed_and_store_documents,chunk_text
+from vector_store.pinecone import embed_and_store_documents, chunk_text
 
 
 class RegulationService:
@@ -25,17 +25,18 @@ class RegulationService:
 
     def __init__(self):
         """Initialize service with necessary clients."""
-        self.openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY.get_secret_value())
-        self.embeddings =  OpenAIEmbeddings(model="text-embedding-ada-002", api_key=settings.OPENAI_API_KEY)
+        self.openai_client = AsyncOpenAI(
+            api_key=settings.OPENAI_API_KEY.get_secret_value()
+        )
+        self.embeddings = OpenAIEmbeddings(
+            model="text-embedding-ada-002", api_key=settings.OPENAI_API_KEY
+        )
 
     def create_regulation(self, db: Session, name: str, file_type: str) -> Regulation:
-
         """Create a new regulation record."""
         namespace = settings.PINECONE_NAMESPACE
         regulation = Regulation(
-            name=name,
-            file_type=file_type,
-            pinecone_namespace=namespace
+            name=name, file_type=file_type, pinecone_namespace=namespace
         )
         db.add(regulation)
         db.commit()
@@ -50,7 +51,7 @@ class RegulationService:
         """Update regulation embedding status."""
         regulation = self.get_regulation(db, regulation_id)
         if regulation:
-            setattr(regulation, 'embedding_status', status)
+            setattr(regulation, "embedding_status", status)
             db.commit()
 
     def process_regulation(self, db: Session, file_path: str, regulation_id: int):
@@ -70,7 +71,7 @@ class RegulationService:
                         chunk.metadata = {
                             "page": page_number,
                             "chunk_index": chunk_index,
-                            "regulation_id": regulation_id
+                            "regulation_id": regulation_id,
                         }
                         documents.append(chunk)
 

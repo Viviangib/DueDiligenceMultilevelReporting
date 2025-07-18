@@ -6,8 +6,10 @@ from sqlalchemy.orm import relationship
 
 from db import Base
 
+
 class Regulation(Base):
     """Model for storing regulation information."""
+
     __tablename__ = "regulations"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -16,4 +18,3 @@ class Regulation(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     embedding_status = Column(String, default="in process")
     pinecone_namespace = Column(String, unique=False)
-

@@ -1,6 +1,7 @@
 from typing import Optional
 from utils.prompts.alignment import alignment_def
 
+
 def report_generation_prompt(
     analysis_data: str,
     num_indicators: int,
@@ -8,10 +9,11 @@ def report_generation_prompt(
     standard_version: str = "1.0",
     standard_year: str = "2024",
     organization: str = "User Organization",
-    report_date: Optional[str] = None
+    report_date: Optional[str] = None,
 ) -> str:
     if not report_date:
         from datetime import datetime
+
         report_date = datetime.now().strftime("%Y-%m-%d")
     return f"""
 Generate a professional benchmarking summary report for the following standard:
@@ -102,5 +104,3 @@ highlight the benchmarking process
 
 Do **not** include any instructional or template headings. Write the report as a finished, professional document, not as a template to be filled in.
 """
-
-
