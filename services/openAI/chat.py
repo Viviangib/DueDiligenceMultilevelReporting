@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class OpenAIClient:
-    def __init__(self, api_key: str = "", model: str = "gpt-4o"):
+    def __init__(self, api_key: str = "", model: str = "gpt-4o-mini"):
         self.client = AsyncOpenAI(api_key=api_key) if api_key else AsyncOpenAI()
         self.model = model
 

@@ -1,5 +1,5 @@
 
-alignment_def = {
+alignment_def = """
     "Not applicable": {
         "Definition": " The regulation does not address the topic of this indicator of the assessed framework OR this indicator is out of scope of the regulation.",
         "Implication": ""
@@ -21,3 +21,4 @@ alignment_def = {
         "Implication": "The requirement in the assessed standard is equivalent to this regulatory criterion. Considered to be fully covered by the benchmarked standard."
     }
 }
+"""
