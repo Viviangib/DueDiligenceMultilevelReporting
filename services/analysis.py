@@ -287,8 +287,9 @@ class AnalysisService:
             )
 
             # Save to Excel
-            output_file = f"anlysis/llm_results_{uuid.uuid4()}.xlsx"
-            os.makedirs("analysis", exist_ok=True)
+            output_dir = "analysis"
+            os.makedirs(output_dir, exist_ok=True)
+            output_file = os.path.join(output_dir, f"llm_results_{uuid.uuid4()}.xlsx")
 
             # Prepare DataFrame with required columns and formatted GPT response
             def format_gpt_response(row):
