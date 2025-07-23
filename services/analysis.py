@@ -15,6 +15,7 @@ from typing import List, Dict, Any, Tuple
 import asyncio
 import datetime
 from services.openAI.chat import OpenAIClient
+import tiktoken
 
 
 # Configure logging
@@ -22,6 +23,20 @@ logger = logging.getLogger(__name__)
 
 openai_client = OpenAIClient(model="gpt-4o-mini")
 
+
+def chunk_text_by_tokens(text, model, max_tokens):
+    """
+    Splits a string into chunks such that each chunk is ≤ max_tokens for the specified model.
+    """
+    enc = tiktoken.encoding_for_model(model)
+    tokens = enc.encode(text)
+
+    chunks = []
+    for i in range(0, len(tokens), max_tokens):
+        chunk_tokens = tokens[i:i+max_tokens]
+        chunk_text = enc.decode(chunk_tokens)
+        chunks.append(chunk_text)
+    return chunks
 
 def extract_json_array(text: str | None) -> List[Dict[str, Any]]:
     if text is None:
@@ -178,68 +193,7 @@ class AnalysisService:
             db.commit()
             logger.info(f"Updated analysis {analysis_id} to status {status}")
 
-    async def generate_summary_report(
-        self,
-        excel_file_path: str,
-        standard_name: str = "User Standard",
-        standard_version: str = "1.0",
-        standard_year: str = "2024",
-        organization: str = "User Organization",
-    ) -> str:
-        """
-        Generates a professional benchmarking summary report by processing the Excel data through GPT.
-        Saves the report as a Markdown file and returns its path.
-        """
-        try:
-            logger.info(f"Starting report generation for file: {excel_file_path}")
-
-            # Read Excel into DataFrame
-            df = pd.read_excel(excel_file_path)
-            logger.info(
-                f"Loaded Excel file with {len(df)} rows and {len(df.columns)} columns"
-            )
-
-            if df.empty:
-                raise Exception("Excel file contains no data.")
-
-            # Convert analysis data to string for the GPT prompt
-            analysis_data = df.to_string(index=False, max_rows=None, max_colwidth=None)
-
-            # Count number of indicators (assuming each row is an indicator)
-            num_indicators = len(df)
-
-            # Build prompt
-            from utils.prompts.report import report_generation_prompt
-            from utils.prompts.alignment import alignment_def
-
-            prompt = report_generation_prompt(
-                analysis_data=analysis_data,
-                num_indicators=num_indicators,
-                standard_name=standard_name,
-                standard_version=standard_version,
-                standard_year=standard_year,
-                organization=organization,
-            )
-
-            logger.info("Sending report generation prompt to GPT...")
-            # Call GPT (using your OpenAIClient)
-            response_text = await openai_client.chat(prompt, max_tokens=4000)
-
-            if not response_text.strip():
-                raise Exception("GPT returned an empty response.")
-
-            # Save report to Markdown file
-            os.makedirs("results", exist_ok=True)
-            report_file_path = f"results/benchmarking_summary_report_{uuid.uuid4()}.md"
-            with open(report_file_path, "w", encoding="utf-8") as f:
-                f.write(response_text)
-
-            logger.info(f"Report saved at: {report_file_path}")
-            return report_file_path
-
-        except Exception as e:
-            logger.error(f"Report generation failed: {str(e)}")
-            raise
+    
 
     async def run_analysis(
         self,
@@ -333,8 +287,9 @@ class AnalysisService:
             )
 
             # Save to Excel
-            output_file = f"results/analysis_results_{uuid.uuid4()}.xlsx"
-            os.makedirs("results", exist_ok=True)
+            output_dir = "analysis"
+            os.makedirs(output_dir, exist_ok=True)
+            output_file = os.path.join(output_dir, f"llm_results_{uuid.uuid4()}.xlsx")
 
             # Prepare DataFrame with required columns and formatted GPT response
             def format_gpt_response(row):

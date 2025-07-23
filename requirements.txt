@@ -7,6 +7,7 @@ annotated-types==0.7.0
 anyio==4.9.0
 attrs==25.3.0
 bcrypt==4.0.1
+black==25.1.0
 certifi==2025.6.15
 cffi==1.17.1
 charset-normalizer==3.4.2
@@ -41,6 +42,7 @@ markdown-it-py==3.0.0
 MarkupSafe==3.0.2
 mdurl==0.1.2
 multidict==6.5.0
+mypy_extensions==1.1.0
 numpy==2.3.1
 openai==1.90.0
 openpyxl==3.1.5
@@ -48,12 +50,14 @@ orjson==3.10.18
 packaging==24.2
 pandas==2.3.0
 passlib==1.7.4
+pathspec==0.12.1
 pdfminer.six==20250506
 pdfplumber==0.11.7
 pillow==11.2.1
 pinecone==7.2.0
 pinecone-plugin-assistant==1.7.0
 pinecone-plugin-interface==0.0.7
+platformdirs==4.3.8
 pluggy==1.6.0
 propcache==0.3.2
 psycopg2-binary==2.9.10
