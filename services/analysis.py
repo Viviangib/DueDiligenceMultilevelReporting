@@ -3,7 +3,7 @@ import pandas as pd
 from sqlalchemy.orm import Session
 from models.indicator import Indicator
 from utils.prompts.alignment import alignment_def
-from utils.prompts.analysis import build_batch_prompt
+from utils.prompts.analysis import build_batch_prompt,analysis_prompt
 from vector_store.pinecone_store import rag_searcher
 from openai import AsyncOpenAI, RateLimitError
 import uuid
@@ -22,6 +22,39 @@ import tiktoken
 logger = logging.getLogger(__name__)
 
 openai_client = OpenAIClient(model="gpt-4o-mini")
+
+
+
+def parse_analysis_response(response: str) -> Dict[str, str]:
+    try:
+        pattern = r"STATEMENT:(.*?)EVIDENCE:(.*?)CITATIONS:(.*?)ALIGNMENT CATEGORY:(.*?)JUSTIFICATION:(.*)"
+        match = re.search(pattern, response, re.DOTALL | re.IGNORECASE)
+        if match:
+            return {
+                "STATEMENT": match.group(1).strip(),
+                "EVIDENCE": match.group(2).strip(),
+                "CITATIONS": match.group(3).strip(),
+                "ALIGNMENT CATEGORY": match.group(4).strip(),
+                "JUSTIFICATION": match.group(5).strip(),
+            }
+        else:
+            logger.warning(f"Could not parse response correctly:\n{response[:1000]}")
+            return {
+                "STATEMENT": "",
+                "EVIDENCE": "",
+                "CITATIONS": "",
+                "ALIGNMENT CATEGORY": "",
+                "JUSTIFICATION": "",
+            }
+    except Exception as e:
+        logger.error(f"Parsing error: {e}")
+        return {
+            "STATEMENT": "",
+            "EVIDENCE": "",
+            "CITATIONS": "",
+            "ALIGNMENT CATEGORY": "",
+            "JUSTIFICATION": "",
+        }
 
 
 def chunk_text_by_tokens(text, model, max_tokens):
@@ -61,118 +94,89 @@ def extract_json_array(text: str | None) -> List[Dict[str, Any]]:
     return []
 
 
-async def process_gpt_batch(
-    batch: List[Dict[str, str]],
+
+async def process_single_indicator(
+    indicator: Dict[str, str],
+    alignment_def: str,
+    combined_vss_text: str,
+    openai_client: Any,
+    max_retries: int = 3,
+    delay_between_calls: float = 0.5,
+    semaphore: asyncio.Semaphore = None,
+) -> Dict[str, Any]:
+    indicator_id = indicator["indicator_id"]
+    question = indicator["question"]
+    evidence = indicator["evidence"]
+
+    prompt = analysis_prompt(
+        alignment_def=alignment_def,
+        indicator_id=indicator_id,
+        vss_texts=combined_vss_text,
+        question=question,
+        evidence=evidence,
+    )
+
+    async def _call():
+        for attempt in range(max_retries):
+            try:
+                response = await openai_client.chat(prompt, max_tokens=4000)
+                parsed_result = {
+                    "Indicator ID": indicator_id,
+                    **parse_analysis_response(response),
+                }
+                logger.info(f"Processed indicator {indicator_id}")
+                return parsed_result
+            except RateLimitError:
+                wait_time = 2 ** attempt
+                logger.warning(f"Rate limit hit for {indicator_id}, retrying in {wait_time}s...")
+                await asyncio.sleep(wait_time)
+            except Exception as e:
+                logger.error(f"Error processing {indicator_id}: {e}")
+                with open(f"gpt_single_error_{indicator_id}_{uuid.uuid4()}.txt", "w") as f:
+                    f.write(prompt)
+                return {
+                    "Indicator ID": indicator_id,
+                    "STATEMENT": "",
+                    "EVIDENCE": "",
+                    "CITATIONS": "",
+                    "ALIGNMENT CATEGORY": "",
+                    "JUSTIFICATION": "",
+                }
+
+        return {
+            "Indicator ID": indicator_id,
+            "STATEMENT": "",
+            "EVIDENCE": "",
+            "CITATIONS": "",
+            "ALIGNMENT CATEGORY": "",
+            "JUSTIFICATION": "",
+        }
+
+    if semaphore:
+        async with semaphore:
+            return await _call()
+    else:
+        return await _call()
+
+
+async def process_gpt_per_indicator(
+    indicators: List[Dict[str, str]],
     alignment_def: str,
     vss_texts: List[str],
     openai_client: Any,
-    max_retries: int = 3,
+    max_concurrent_tasks: int = 450
 ) -> List[Dict[str, Any]]:
     combined_vss_text = " ".join(vss_texts)
-    logger.info(
-        f"Combined VSS text length: {len(combined_vss_text)} characters (~{len(combined_vss_text)//4} tokens)"
-    )
+    logger.info(f"Combined VSS text length: {len(combined_vss_text)} characters")
 
-    async def process_single_batch(
-        single_batch: List[Dict[str, str]], batch_index: int
-    ) -> Tuple[int, List[Dict[str, Any]]]:
-        prompt = build_batch_prompt(single_batch, alignment_def, combined_vss_text)
-        for attempt in range(max_retries):
-            try:
-                response = await openai_client.chat(
-                    prompt, max_tokens=16000
-                )  # Increased for chunk_size=5
-                batch_results = extract_json_array(response)
-                logger.info(
-                    f"Batch {batch_index} token usage: {openai_client.last_response.usage if hasattr(openai_client, 'last_response') else 'unknown'}"
-                )
-                if isinstance(batch_results, list):
-                    input_ids = {item["indicator_id"] for item in single_batch}
-                    output_ids = {
-                        result["Indicator ID"]
-                        for result in batch_results
-                        if "Indicator ID" in result
-                    }
-                    if (
-                        len(batch_results) == len(single_batch)
-                        and input_ids == output_ids
-                    ):
-                        return batch_index, batch_results
-                    logger.warning(
-                        f"Batch {batch_index} output mismatch: expected {len(single_batch)} indicators, got {len(batch_results)}, missing IDs: {input_ids - output_ids}"
-                    )
-                    return batch_index, batch_results  # Preserve partial results
-                logger.warning(f"Batch {batch_index} invalid output: not a list")
-            except (RateLimitError, Exception) as e:
-                logger.error(
-                    f"Batch {batch_index} failed: {e}\nContent: {response[:1000] if 'response' in locals() else 'N/A'}"
-                )
-                with open(
-                    f"gpt_batch_error_output_{uuid.uuid4()}.json", "w", encoding="utf-8"
-                ) as f:
-                    f.write(response if "response" in locals() else str(e))
-                if isinstance(e, RateLimitError) or "503" in str(e) or "520" in str(e):
-                    await asyncio.sleep(2**attempt)  # Exponential backoff
-        return batch_index, []  # Explicit return for all code paths
+    semaphore = asyncio.Semaphore(max_concurrent_tasks)
 
-    # Split batch into smaller chunks
-    chunk_size = 2
-    batches = [batch[i : i + chunk_size] for i in range(0, len(batch), chunk_size)]
-    logger.info(f"Created {len(batches)} sub-batches for {len(batch)} indicators")
-
-    # Process batches concurrently
-    tasks = [process_single_batch(b, i) for i, b in enumerate(batches)]
-    results_by_index: Dict[int, List[Dict[str, Any]]] = {}
-    for future in asyncio.as_completed(tasks):
-        batch_index, batch_result = await future
-        if batch_result:
-            results_by_index[batch_index] = batch_result
-
-    # Combine results in original order
-    results: List[Dict[str, Any]] = []
-    missing_indicators: List[Dict[str, str]] = []
-    for i in range(len(batches)):
-        if i in results_by_index:
-            results.extend(results_by_index[i])
-        else:
-            missing_batch = batches[i]
-            missing_indicators.extend(missing_batch)
-            logger.warning(f"Batch {i} missing from results")
-
-    # Retry missing indicators individually
-    if missing_indicators:
-        logger.info(
-            f"Retrying {len(missing_indicators)} missing indicators individually"
-        )
-        retry_tasks = [
-            process_single_batch([indicator], i + len(batches))
-            for i, indicator in enumerate(missing_indicators)
-        ]
-        for future in asyncio.as_completed(retry_tasks):
-            batch_index, retry_result = await future
-            if retry_result:
-                results.extend(retry_result)
-            else:
-                missing_id = missing_indicators[batch_index - len(batches)][
-                    "indicator_id"
-                ]
-                logger.error(f"Failed to retry indicator: {missing_id}")
-
-    # Validate all indicators are included
-    input_ids = {item["indicator_id"] for item in batch}
-    output_ids = {
-        result["Indicator ID"] for result in results if "Indicator ID" in result
-    }
-    still_missing = input_ids - output_ids
-    if still_missing:
-        logger.error(f"Still missing {len(still_missing)} indicators: {still_missing}")
-
-    # Sort results by indicator_id to match input order
-    input_id_order = {item["indicator_id"]: i for i, item in enumerate(batch)}
-    results.sort(key=lambda x: input_id_order.get(x["Indicator ID"], float("inf")))
-    logger.info(f"Completed processing {len(results)} indicators")
+    tasks = [
+        process_single_indicator(ind, alignment_def, combined_vss_text, openai_client, semaphore=semaphore)
+        for ind in indicators
+    ]
+    results = await asyncio.gather(*tasks)
     return results
-
 
 class AnalysisService:
     def create_analysis(self, db: Session) -> Analysis:
@@ -288,9 +292,8 @@ class AnalysisService:
             logger.info(
                 f"Processing {len(all_batches)} indicators in parallel batches of 5..."
             )
-            results = await process_gpt_batch(
-                all_batches, alignment_def_str, vss_texts, openai_client
-            )
+            results = await process_gpt_per_indicator(all_batches, alignment_def_str, vss_texts, openai_client)
+
             logger.info(
                 f"Total GPT calls made: {len(all_batches) // 5 + (1 if len(all_batches) % 5 else 0)}"
             )

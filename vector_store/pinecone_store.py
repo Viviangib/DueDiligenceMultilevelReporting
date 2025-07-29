@@ -22,7 +22,7 @@ def namespace_exists(namespace: str) -> bool:
 
 
 class RAGSearcher:
-    def __init__(self, k=8, namespace=None):
+    def __init__(self, k=5, namespace=None):
         self.k = k
         self.namespace = namespace or settings.PINECONE_NAMESPACE
         logger.info(f"Initializing RAG searcher with namespace: {self.namespace}")
