@@ -70,5 +70,3 @@ def get_analysis_status_controller(analysis_id: int, db: Session):
             filename="analysis_results.xlsx",
         )
     return analysis
-
-

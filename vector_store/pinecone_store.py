@@ -46,25 +46,23 @@ class RAGSearcher:
         logger.info(f"Retrieved {len(evidence)} documents.")
         return evidence
 
+    
     async def async_search(self, query: str):
         logger.info(
             f"Running async RAG search in namespace '{self.namespace}' for query: {query[:100]}..."
         )
         try:
-            # Run synchronous get_relevant_documents in a thread to make it async-compatible
             loop = asyncio.get_event_loop()
             docs = await loop.run_in_executor(
                 None, self.retriever.get_relevant_documents, query
             )
-            evidence = [doc.page_content for doc in docs]
-            logger.info(f"Retrieved {len(evidence)} documents.")
-            return evidence
+            logger.info(f"Retrieved {len(docs)} documents.")
+            return docs  # ✅ Return Document objects with metadata
         except Exception as e:
             logger.error(
                 f"RAG search failed for query '{query[:100]}...' in namespace '{self.namespace}': {e}"
             )
             return []
-
 
 # Create one shared instance
 rag_searcher = RAGSearcher()

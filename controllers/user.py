@@ -34,5 +34,5 @@ def authenticate_user(db: Session, login_data: UserLogin):
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password"
         )
     return create_access_token(
-        data={"sub": user.username}, expires_delta=timedelta(minutes=30)
+        data={"sub": user.username}, expires_delta=timedelta(minutes=120)
     )

@@ -1,9 +1,20 @@
 import logging
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends, Form
+from fastapi import (
+    APIRouter,
+    UploadFile,
+    File,
+    HTTPException,
+    BackgroundTasks,
+    Depends,
+    Form,
+)
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from db import SessionLocal
-from controllers.report import start_report_generation, get_report_status_and_file_controller
+from controllers.report import (
+    start_report_generation,
+    get_report_status_and_file_controller,
+)
 from services.report import ReportService
 from utils.security import get_current_user
 import os
@@ -12,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/report", tags=["report"])
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -19,14 +31,21 @@ def get_db():
     finally:
         db.close()
 
+
 @router.post("/generate", dependencies=[Depends(get_current_user)])
 async def request_report_generation(
     background_tasks: BackgroundTasks,
-    excel_file: UploadFile = File(..., description="Excel file containing analysis results"),
-    standard_name: str = Form("User Standard", description="Name of the benchmarked standard"),
+    excel_file: UploadFile = File(
+        ..., description="Excel file containing analysis results"
+    ),
+    standard_name: str = Form(
+        "User Standard", description="Name of the benchmarked standard"
+    ),
     standard_version: str = Form("1.0", description="Version of the standard"),
     standard_year: str = Form("2024", description="Year of publication"),
-    organization: str = Form("User Organization", description="Name of the founding organization"),
+    organization: str = Form(
+        "User Organization", description="Name of the founding organization"
+    ),
     db: Session = Depends(get_db),
 ):
     """
@@ -48,6 +67,7 @@ async def request_report_generation(
         logger.error(f"Error starting report generation: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to start report generation")
 
+
 @router.get("/{report_id}/status", dependencies=[Depends(get_current_user)])
 async def get_report_status(report_id: int, db: Session = Depends(get_db)):
     """
@@ -61,6 +81,7 @@ async def get_report_status(report_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Error getting report status for ID {report_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get report status")
+
 
 @router.get("/{report_id}/download", dependencies=[Depends(get_current_user)])
 async def download_report_file(report_id: int, db: Session = Depends(get_db)):

@@ -13,11 +13,15 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from openai import AsyncOpenAI
 from pydantic import SecretStr
 import re
+import logging
 
 
 from models.regulation import Regulation
 from config import settings
 from vector_store.pinecone import embed_and_store_documents, chunk_text
+
+
+logger = logging.getLogger(__name__)
 
 
 class RegulationService:
@@ -61,7 +65,10 @@ class RegulationService:
                 raise Exception("Regulation not found")
 
             documents = []
+            source_file = os.path.basename(file_path)  # Extract PDF filename
             with pdfplumber.open(file_path) as pdf:
+                total_pages = len(pdf.pages)  # Get total number of pages
+                logger.info(f"Processing PDF: {source_file}, Total pages: {total_pages}")
                 for page_number, page in enumerate(pdf.pages, start=1):
                     page_text = page.extract_text()
                     if not page_text:
@@ -72,6 +79,7 @@ class RegulationService:
                             "page": page_number,
                             "chunk_index": chunk_index,
                             "regulation_id": regulation_id,
+                            "source_file": source_file  
                         }
                         documents.append(chunk)
 

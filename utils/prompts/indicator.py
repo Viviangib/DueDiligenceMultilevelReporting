@@ -31,7 +31,6 @@ Exclude content that:
 - Lacks an explicit, valid ID directly tied to the question or statement.
 
 
-
 IDs must not be generic words, placeholders, or fabricated by the assistant must be excluded. Dont make an ID out of anything. 
 Make sure you dont create one for a statement you think might follow the indicator criteria.
 
@@ -62,7 +61,7 @@ They are actionable or measurable, meaning they can be evaluated with a response
 
 2. **Extract Fields**:
    - **ID**: Extract the exact ID as it appears, ensuring it matches the valid patterns and is directly tied to the indicator. Do not infer, fabricate, or reassign IDs from other parts of the document.
-   - **Question/Statement**: Extract the core text. Rephrase questions as positive statements (e.g., "Does the project comply?" → "The project complies."). Use statements as-is. No need to rephrase if the extracted text is already a statement, only rephrae if its a question
+   - **Question/Statement**: Extract the full question or statement exactly as written. Do not rephrase, summarize, or convert between question and statement. Preserve its original form
    - **Answer Options**: Extract predefined response choices (e.g., ["Yes", "No"]). Use [] if none are specified.
    - **Answer**: Extract the provided answer, if any. Use null if missing.
 
@@ -81,7 +80,7 @@ ID: Only extract indicators that have an explicit, adjacent ID clearly visible i
 If no such ID is present, do not extract the indicator. Indicators without an ID are not considered valid and must be ignored.
 Never fabricate, guess, or infer an ID, and never associate an ID from elsewhere in the document.
 
-Question/Statement: Extract the core text. Rephrase questions into positive statements. No need to rephrase if the extracted text is already a statement, only rephrae if its a question.
+Question/Statement: Extract the full question or statement exactly as written. Do not rephrase, summarize, or convert between question and statement. Preserve its original form
 
 Answer Options: Identify predefined response types (e.g., Yes/No, Multi-select). Use [] if none are specified.
 
@@ -94,12 +93,7 @@ Capture nested indicators (e.g., "1.1.1" under "Criterion 1.1").
 Include incomplete indicators with available data, but ensure they meet the indicator criteria.
 
 
-Rephrase Questions:
-Rewrite questions as positive statements for consistency. In case the the indicator is already a statement , then there is no need to convert to a statement. Only convert a question
-
-
-Example: "Does the project comply with biodiversity strategies?" → "The project complies with biodiversity strategies."
-Similary If indicators are statements, then proceed to the next step
+Example: "Does the project comply with biodiversity strategies?"
 
 
 Ensure Completeness:
@@ -154,7 +148,7 @@ Note: No explicit answer options or answers are provided, so those fields are em
 Important Instructions
 
 Do not rely on exact headings. Field names vary across documents (e.g., "Field" vs. "Declaration"). Use your best judgment to infer mappings.
-Always rephrase questions into positive statements.
++ Do not rephrase questions or statements at all. Extract them as-is — retain their original form as either a question or a statement.
 Extract all valid indicators. Do not invent indicators or include content that doesn’t fit the definition (e.g., a table without a question/statement).
 Ensure the output is a valid JSON array. If no indicators are found, return [].
 Handle incomplete data gracefully. Use null or - for missing fields.

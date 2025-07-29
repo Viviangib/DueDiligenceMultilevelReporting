@@ -33,10 +33,11 @@ def chunk_text_by_tokens(text, model, max_tokens):
 
     chunks = []
     for i in range(0, len(tokens), max_tokens):
-        chunk_tokens = tokens[i:i+max_tokens]
+        chunk_tokens = tokens[i : i + max_tokens]
         chunk_text = enc.decode(chunk_tokens)
         chunks.append(chunk_text)
     return chunks
+
 
 def extract_json_array(text: str | None) -> List[Dict[str, Any]]:
     if text is None:
@@ -115,7 +116,7 @@ async def process_gpt_batch(
         return batch_index, []  # Explicit return for all code paths
 
     # Split batch into smaller chunks
-    chunk_size = 3
+    chunk_size = 2
     batches = [batch[i : i + chunk_size] for i in range(0, len(batch), chunk_size)]
     logger.info(f"Created {len(batches)} sub-batches for {len(batch)} indicators")
 
@@ -193,8 +194,6 @@ class AnalysisService:
             db.commit()
             logger.info(f"Updated analysis {analysis_id} to status {status}")
 
-    
-
     async def run_analysis(
         self,
         db: Session,
@@ -238,15 +237,25 @@ class AnalysisService:
                 indicator_id = str(indicator_obj.indicator_id)
                 question = str(indicator_obj.indicator)
                 try:
-                    evidence = await rag_searcher.async_search(str(question))
+                    retrieved_chunks = await rag_searcher.async_search(str(question))
+
+                    formatted_chunks = []
+                    for chunk in retrieved_chunks:
+                        page = chunk.metadata.get("page", "unknown")
+                        source_file = chunk.metadata.get("source_file", "unknown")  # Get source file
+                        page_str = f"{page}" if page is not None else "unknown"
+                        content_for_llm = f"[Source: {source_file}, Page: {page_str}]\n{chunk.page_content.strip()}"
+                        formatted_chunks.append(content_for_llm)
+                                
                 except Exception as e:
                     logger.error(f"RAG search failed for indicator {indicator_id}: {e}")
-                    evidence = []
+                    formatted_chunks = []
                 return {
                     "indicator_id": indicator_id,
                     "question": question,
-                    "evidence": evidence,
+                    "evidence": formatted_chunks,
                 }
+
 
             logger.info(
                 f"Fetching RAG evidence for {len(indicators)} indicators concurrently..."
