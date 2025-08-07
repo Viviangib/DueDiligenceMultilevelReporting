@@ -44,7 +44,7 @@ This backend benchmarks Voluntary Sustainability Standards (VSS) against regulat
 ```bash
 # In your terminal:
 git clone <repo-url>
-cd backend
+cd DueDiligenceMultilevelReporting
 ```
 
 ### 3. Create and Activate a Virtual Environment
