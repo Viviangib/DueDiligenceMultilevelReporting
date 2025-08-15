@@ -15,6 +15,7 @@ import asyncio
 import datetime
 from infrastructure.openai.client import OpenAIClient
 import tiktoken
+from core.config import settings
 
 
 # Configure logging
@@ -27,8 +28,14 @@ openai_client = OpenAIClient(model="gpt-4o-mini")
 
 def parse_analysis_response(response: str) -> Dict[str, str]:
     try:
-        pattern = r"STATEMENT:(.*?)EVIDENCE:(.*?)CITATIONS:(.*?)ALIGNMENT CATEGORY:(.*?)JUSTIFICATION:(.*)"
-        match = re.search(pattern, response, re.DOTALL | re.IGNORECASE)
+        # Clean the response by removing asterisks and extra whitespace
+        cleaned_response = re.sub(r'\*+', '', response)  # Remove all asterisks
+        cleaned_response = re.sub(r'\s+', ' ', cleaned_response)  # Normalize whitespace
+        
+        # Updated pattern to handle potential asterisks and whitespace variations
+        pattern = r"STATEMENT:\s*(.*?)\s*EVIDENCE:\s*(.*?)\s*CITATIONS:\s*(.*?)\s*ALIGNMENT\s+CATEGORY:\s*(.*?)\s*JUSTIFICATION:\s*(.*?)$"
+        match = re.search(pattern, cleaned_response, re.DOTALL | re.IGNORECASE)
+        
         if match:
             return {
                 "STATEMENT": match.group(1).strip(),
@@ -38,6 +45,18 @@ def parse_analysis_response(response: str) -> Dict[str, str]:
                 "JUSTIFICATION": match.group(5).strip(),
             }
         else:
+            # Fallback: try original pattern in case the above is too aggressive
+            pattern_fallback = r"STATEMENT:(.*?)EVIDENCE:(.*?)CITATIONS:(.*?)ALIGNMENT CATEGORY:(.*?)JUSTIFICATION:(.*)"
+            match_fallback = re.search(pattern_fallback, response, re.DOTALL | re.IGNORECASE)
+            if match_fallback:
+                return {
+                    "STATEMENT": re.sub(r'\*+', '', match_fallback.group(1)).strip(),
+                    "EVIDENCE": re.sub(r'\*+', '', match_fallback.group(2)).strip(),
+                    "CITATIONS": re.sub(r'\*+', '', match_fallback.group(3)).strip(),
+                    "ALIGNMENT CATEGORY": re.sub(r'\*+', '', match_fallback.group(4)).strip(),
+                    "JUSTIFICATION": re.sub(r'\*+', '', match_fallback.group(5)).strip(),
+                }
+            
             logger.warning(f"Could not parse response correctly:\n{response[:1000]}")
             return {
                 "STATEMENT": "",

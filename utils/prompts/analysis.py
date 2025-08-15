@@ -149,7 +149,7 @@ def analysis_prompt(
 
         #OUTPUT :
 
-        **For this indicator, provide the following in your response:
+        For this indicator, provide the following in your response:
         Please give two lines of space between each category. (\\n\\n)
         
         STATEMENT: <original indicator>
@@ -168,7 +168,9 @@ def analysis_prompt(
         JUSTIFICATION: <detailed justification>
 
 
-        Make sure to Format your response as:
+        IMPORTANT: Do NOT use any markdown formatting (**, *, #, etc.) in your response. Use plain text only.
+        
+        Format your response exactly as follows with no asterisks or markdown:
 
         STATEMENT: ...
         EVIDENCE: ...
@@ -176,7 +178,7 @@ def analysis_prompt(
         ALIGNMENT CATEGORY: ...
         JUSTIFICATION: ...
 
-        Add two lines of space  between each category
+        Add two lines of space between each category
 
         """
 
