@@ -62,7 +62,7 @@ pip install -r requirements.txt
 
 ### 5. Set Up Environment Variables
 
-- Copy `config.py.example` to `config.py` and fill in your OpenAI API key, Pinecone API key, DB URL, and other settings.
+- Create a `.env` file in the root directory with your configuration settings.
 - Or create a `.env` file in the root directory with:
   ```env
   OPENAI_API_KEY=your-openai-key
@@ -163,18 +163,18 @@ uvicorn server:app --reload
 ```
 backend/
   alembic/           # DB migrations
-  config.py          # Configuration
+  core/              # Core configuration
   constants/         # Hardcoded values
   controllers/       # Business logic
   db/                # DB setup
   enums/             # Enums
+  infrastructure/    # External integrations (Pinecone, OpenAI)
   models/            # ORM models
   routers/           # FastAPI routers
   schemas/           # Pydantic schemas
   services/          # Core services
   utils/             # Utilities (LLM, extraction, prompts)
-  vector_store/      # Pinecone integration
-  results/           # Output files
+  storage/           # Output files and uploads
   vss_uploads/       # Uploaded VSS docs
 ```
 

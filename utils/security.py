@@ -1,7 +1,7 @@
 import bcrypt
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
-from config import settings
+from core.config import settings
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 

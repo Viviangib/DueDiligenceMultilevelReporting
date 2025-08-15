@@ -18,7 +18,6 @@ from controllers.regulation import (
 from schemas.regulation import RegulationStatus
 from utils.security import get_current_user
 import os
-import uuid
 
 router = APIRouter(prefix="/regulations", tags=["regulations"])
 
@@ -40,8 +39,11 @@ def upload_regulation(
     if not file.filename or not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
 
-    file_path = f"uploads/{uuid.uuid4()}_{file.filename}"
-    os.makedirs("uploads", exist_ok=True)
+    from core.config import settings
+    base_dir = settings.STORAGE_ROOT
+    uploads_dir = os.path.join(base_dir, settings.UPLOADS_DIR)
+    os.makedirs(uploads_dir, exist_ok=True)
+    file_path = os.path.join(uploads_dir, file.filename)
 
     with open(file_path, "wb") as f:
         f.write(file.file.read())

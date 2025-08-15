@@ -1,7 +1,6 @@
 """Service layer for regulation analysis."""
 
 import os
-import uuid
 from typing import List, Dict, Optional
 import pandas as pd
 import pdfplumber
@@ -17,8 +16,8 @@ import logging
 
 
 from models.regulation import Regulation
-from config import settings
-from vector_store.pinecone import embed_and_store_documents, chunk_text
+from core.config import settings
+from infrastructure.vectorstores.pinecone_index import embed_and_store_documents, chunk_text
 
 
 logger = logging.getLogger(__name__)

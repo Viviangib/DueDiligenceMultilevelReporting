@@ -1,5 +1,3 @@
-# config.py
-
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
@@ -19,9 +17,19 @@ class Settings(BaseSettings):
     REGION: str = "us-east-1"
     CLOUD: str = "aws"
 
+    # Storage roots
+    STORAGE_ROOT: str = "storage"
+    UPLOADS_DIR: str = "uploads"
+    VSS_UPLOADS_DIR: str = "vss_uploads"
+    TEMP_UPLOADS_DIR: str = "temp_uploads"
+    SUMMARY_REPORTS_DIR: str = "summary_reports"
+    ANALYSIS_OUTPUT_DIR: str = "analysis"
+
     class Config:
         env_file = ".env"
         extra = "ignore"
 
 
 settings = Settings()
+
+

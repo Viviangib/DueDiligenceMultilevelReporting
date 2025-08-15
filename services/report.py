@@ -1,5 +1,4 @@
 import os
-import uuid
 import logging
 from sqlalchemy.orm import Session
 from models.report import Report
@@ -9,13 +8,14 @@ from db import SessionLocal
 from typing import Optional, Dict, Any
 import asyncio
 import pandas as pd
-from services.openAI.chat import OpenAIClient
+from infrastructure.openai.client import OpenAIClient
 import tiktoken
 
 logger = logging.getLogger(__name__)
 
-TEMP_UPLOAD_DIR = "temp_uploads"
-REPORTS_DIR = "summary_reports"
+from core.config import settings
+TEMP_UPLOAD_DIR = os.path.join(settings.STORAGE_ROOT, settings.TEMP_UPLOADS_DIR)
+REPORTS_DIR = os.path.join(settings.STORAGE_ROOT, settings.SUMMARY_REPORTS_DIR)
 REPORT_EXCEL_MEDIA_TYPE = (
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
@@ -46,8 +46,7 @@ class ReportService:
             raise HTTPException(
                 status_code=400, detail="Only Excel files (.xlsx, .xls) are supported"
             )
-        unique_filename = f"{uuid.uuid4()}_{filename}"
-        file_path = os.path.abspath(os.path.join(TEMP_UPLOAD_DIR, unique_filename))
+        file_path = os.path.abspath(os.path.join(TEMP_UPLOAD_DIR, filename))
         try:
             content = await upload_file.read()
             with open(file_path, "wb") as f:
@@ -138,7 +137,7 @@ class ReportService:
                 )
                 partial_reports = []
                 from utils.prompts.report import report_generation_prompt
-                from utils.prompts.alignment import alignment_def
+                from prompts.alignment import alignment_def
 
                 for idx, chunk in enumerate(chunks):
                     logger.info(
@@ -168,7 +167,7 @@ class ReportService:
                 )
             else:
                 from utils.prompts.report import report_generation_prompt
-                from utils.prompts.alignment import alignment_def
+                from prompts.alignment import alignment_def
 
                 prompt = report_generation_prompt(
                     analysis_data=analysis_data,
@@ -185,7 +184,7 @@ class ReportService:
             os.makedirs(REPORTS_DIR, exist_ok=True)
             report_file_path = os.path.abspath(
                 os.path.join(
-                    REPORTS_DIR, f"benchmarking_summary_report_{uuid.uuid4()}.md"
+                    REPORTS_DIR, "benchmarking_summary_report.md"
                 )
             )
             with open(report_file_path, "w", encoding="utf-8") as f:

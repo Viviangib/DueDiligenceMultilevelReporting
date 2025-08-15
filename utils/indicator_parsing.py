@@ -1,20 +1,20 @@
 import json
 import re
-from services.openAI.chat import OpenAIClient
+from infrastructure.openai.client import OpenAIClient
 from utils.prompts.indicator import INDICATOR_PROMPT
 from openai import AsyncOpenAI, RateLimitError
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
-from config import settings
-from services.openAI.chat import OpenAIClient
+from core.config import settings
+from infrastructure.openai.client import OpenAIClient
 import logging
 from typing import List, Dict, Any, Tuple
 import asyncio
-import uuid
 
 logger = logging.getLogger(__name__)
 
 openai_client = OpenAIClient()
+# Using string-based prompts
 
 client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY.get_secret_value())
 

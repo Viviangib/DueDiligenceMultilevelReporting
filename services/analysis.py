@@ -2,11 +2,10 @@ import logging
 import pandas as pd
 from sqlalchemy.orm import Session
 from models.indicator import Indicator
-from utils.prompts.alignment import alignment_def
-from utils.prompts.analysis import build_batch_prompt,analysis_prompt
-from vector_store.pinecone_store import rag_searcher
+from prompts.alignment import alignment_def
+from utils.prompts.analysis import analysis_prompt
+from infrastructure.vectorstores.pinecone_retriever import rag_searcher
 from openai import AsyncOpenAI, RateLimitError
-import uuid
 import os
 import re
 import json
@@ -14,7 +13,7 @@ from models.analysis import Analysis
 from typing import List, Dict, Any, Tuple
 import asyncio
 import datetime
-from services.openAI.chat import OpenAIClient
+from infrastructure.openai.client import OpenAIClient
 import tiktoken
 
 
@@ -22,6 +21,7 @@ import tiktoken
 logger = logging.getLogger(__name__)
 
 openai_client = OpenAIClient(model="gpt-4o-mini")
+# Using string-based prompts
 
 
 
@@ -98,7 +98,7 @@ def extract_json_array(text: str | None) -> List[Dict[str, Any]]:
 async def process_single_indicator(
     indicator: Dict[str, str],
     alignment_def: str,
-    combined_vss_text: str,
+    vss_vector_store: Any,
     openai_client: Any,
     max_retries: int = 3,
     delay_between_calls: float = 0.5,
@@ -108,10 +108,14 @@ async def process_single_indicator(
     question = indicator["question"]
     evidence = indicator["evidence"]
 
+    # Get relevant VSS chunks for this indicator
+    relevant_chunks = vss_vector_store.get_chunks_for_indicator(question, top_k=5)
+    vss_text_for_prompt = vss_vector_store.format_chunks_for_prompt(relevant_chunks)
+
     prompt = analysis_prompt(
         alignment_def=alignment_def,
         indicator_id=indicator_id,
-        vss_texts=combined_vss_text,
+        vss_texts=vss_text_for_prompt,
         question=question,
         evidence=evidence,
     )
@@ -132,7 +136,9 @@ async def process_single_indicator(
                 await asyncio.sleep(wait_time)
             except Exception as e:
                 logger.error(f"Error processing {indicator_id}: {e}")
-                with open(f"gpt_single_error_{indicator_id}_{uuid.uuid4()}.txt", "w") as f:
+                error_dir = os.path.join(settings.STORAGE_ROOT, "errors")
+                os.makedirs(error_dir, exist_ok=True)
+                with open(os.path.join(error_dir, f"gpt_single_error_{indicator_id}.txt"), "w") as f:
                     f.write(prompt)
                 return {
                     "Indicator ID": indicator_id,
@@ -162,17 +168,17 @@ async def process_single_indicator(
 async def process_gpt_per_indicator(
     indicators: List[Dict[str, str]],
     alignment_def: str,
-    vss_texts: List[str],
+    vss_vector_store: Any,
     openai_client: Any,
     max_concurrent_tasks: int = 450
 ) -> List[Dict[str, Any]]:
-    combined_vss_text = " ".join(vss_texts)
-    logger.info(f"Combined VSS text length: {len(combined_vss_text)} characters")
+    logger.info(f"Processing {len(indicators)} indicators with in-memory VSS vector store")
+    logger.info(f"Vector store stats: {vss_vector_store.get_stats()}")
 
     semaphore = asyncio.Semaphore(max_concurrent_tasks)
 
     tasks = [
-        process_single_indicator(ind, alignment_def, combined_vss_text, openai_client, semaphore=semaphore)
+        process_single_indicator(ind, alignment_def, vss_vector_store, openai_client, semaphore=semaphore)
         for ind in indicators
     ]
     results = await asyncio.gather(*tasks)
@@ -215,25 +221,20 @@ class AnalysisService:
             if not indicators:
                 raise Exception("No indicators found in DB for this process_id.")
 
-            # Read VSS text
-            vss_texts = []
-            for path in vss_paths:
-                ext = os.path.splitext(path)[1].lower()
-                if ext == ".pdf":
-                    import pdfplumber
-
-                    with pdfplumber.open(path) as pdf:
-                        text = "".join(page.extract_text() or "" for page in pdf.pages)
-                        vss_texts.append(text)
-                elif ext == ".docx":
-                    from docx import Document
-
-                    doc = Document(path)
-                    text = "\n".join([p.text for p in doc.paragraphs])
-                    vss_texts.append(text)
+            # Initialize in-memory VSS vector store
+            from infrastructure.vectorstores.vss_faiss_store import InMemoryVSSVectorStore
+            
+            vss_vector_store = InMemoryVSSVectorStore()
+            
+            # Add all VSS documents to vector store with exact page extraction
+            vss_vector_store.add_vss_documents(vss_paths)
+            
+            # Build the FAISS index
+            vss_vector_store.build_index()
+            logger.info(f"Built VSS vector store with stats: {vss_vector_store.get_stats()}")
 
             # Prepare all indicator batches concurrently
-            from vector_store.pinecone_store import RAGSearcher
+            from infrastructure.vectorstores.pinecone_retriever import RAGSearcher
 
             rag_searcher = RAGSearcher(namespace=namespace)
 
@@ -292,16 +293,17 @@ class AnalysisService:
             logger.info(
                 f"Processing {len(all_batches)} indicators in parallel batches of 5..."
             )
-            results = await process_gpt_per_indicator(all_batches, alignment_def_str, vss_texts, openai_client)
+            results = await process_gpt_per_indicator(all_batches, alignment_def_str, vss_vector_store, openai_client)
 
             logger.info(
                 f"Total GPT calls made: {len(all_batches) // 5 + (1 if len(all_batches) % 5 else 0)}"
             )
 
             # Save to Excel
-            output_dir = "analysis"
+            from core.config import settings
+            output_dir = os.path.join(settings.STORAGE_ROOT, settings.ANALYSIS_OUTPUT_DIR)
             os.makedirs(output_dir, exist_ok=True)
-            output_file = os.path.join(output_dir, f"llm_results_{uuid.uuid4()}.xlsx")
+            output_file = os.path.join(output_dir, "llm_results.xlsx")
 
             # Prepare DataFrame with required columns and formatted GPT response
             def format_gpt_response(row):
@@ -326,10 +328,24 @@ class AnalysisService:
             df = pd.DataFrame(data)
             df.to_excel(output_file, index=False)
             self.update_analysis_status(db, analysis_id, "completed", output_file)
+            
+            # Clean up the in-memory vector store
+            vss_vector_store.clear()
+            logger.info("Cleared in-memory VSS vector store")
+            
             end_time = datetime.datetime.now()
             logger.info(f"Analysis completed at {end_time}")
             logger.info(f"Total analysis duration: {end_time - start_time}")
         except Exception as e:
             logger.error(f"Analysis failed: {str(e)}")
             self.update_analysis_status(db, analysis_id, "error", "")
+            
+            # Clean up the in-memory vector store on error
+            try:
+                if 'vss_vector_store' in locals():
+                    vss_vector_store.clear()
+                    logger.info("Cleared in-memory VSS vector store on error")
+            except Exception as cleanup_error:
+                logger.error(f"Failed to cleanup vector store: {cleanup_error}")
+            
             raise
