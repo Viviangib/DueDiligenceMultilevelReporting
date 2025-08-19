@@ -129,7 +129,7 @@ class ReportService:
             num_indicators = len(df)
             max_tokens_per_chunk = 100_000
             chunks = chunk_text_by_tokens(
-                analysis_data, model="gpt-4o", max_tokens=max_tokens_per_chunk
+                analysis_data, model="gpt-4o-mini", max_tokens=max_tokens_per_chunk
             )
             if len(chunks) > 1:
                 logger.info(

@@ -35,11 +35,13 @@ class RegulationService:
             model="text-embedding-ada-002", api_key=settings.OPENAI_API_KEY
         )
 
-    def create_regulation(self, db: Session, name: str, file_type: str) -> Regulation:
+    def create_regulation(self, db: Session, name: str, file_type: str, namespace: str = None) -> Regulation:
         """Create a new regulation record."""
-        namespace = settings.PINECONE_NAMESPACE
+        # Use provided namespace or fall back to default from settings
+        pinecone_namespace = namespace if namespace is not None else settings.PINECONE_NAMESPACE
+        logger.info(f"Creating regulation with namespace: {pinecone_namespace} (provided: {namespace}, default: {settings.PINECONE_NAMESPACE})")
         regulation = Regulation(
-            name=name, file_type=file_type, pinecone_namespace=namespace
+            name=name, file_type=file_type, pinecone_namespace=pinecone_namespace
         )
         db.add(regulation)
         db.commit()

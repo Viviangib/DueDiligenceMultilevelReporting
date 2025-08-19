@@ -34,6 +34,7 @@ def get_db():
 def upload_regulation(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    namespace: str = Form(None, description="Optional Pinecone namespace. If not provided, uses default from settings."),
     db: Session = Depends(get_db),
 ):
     if not file.filename or not file.filename.endswith(".pdf"):
@@ -52,14 +53,19 @@ def upload_regulation(
         db,
         str(file.filename),
         str(file.content_type) if file.content_type else "application/pdf",
+        namespace,  # Pass the namespace to the controller
     )
     reg_id = reg.__dict__.get("id", 0)
 
     background_tasks.add_task(process_regulation, db, file_path, reg_id)
 
+    # Get the actual namespace used (from regulation object)
+    actual_namespace = getattr(reg, 'pinecone_namespace', namespace or 'default')
+    
     return {
         "message": "File uploaded, embeddings being created",
         "regulation_id": reg_id,
+        "namespace": actual_namespace,
     }
 
 

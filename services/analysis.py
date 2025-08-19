@@ -26,33 +26,86 @@ openai_client = OpenAIClient(model="gpt-4o-mini")
 
 
 
+def format_numbered_items(text: str) -> str:
+    """
+    Post-process numbered items to ensure proper line breaks for Excel readability.
+    Adds line breaks after each numbered item (1), (2), (3), etc.
+    """
+    if not text or not text.strip():
+        return text
+    
+    # Handle cases where items might already be properly formatted
+    if '\n(' in text:
+        return text  # Already has line breaks
+    
+    # Pattern to match numbered items like (1), (2), (3) followed by content until next number or end
+    # This handles various formats: (1) content (2) content, etc.
+    pattern = r'(\(\d+\)\s*[^()]*?)(?=\s*\(\d+\)|$)'
+    
+    def add_line_break(match):
+        content = match.group(1).strip()
+        if not content:
+            return content
+        # Add a line break at the end of each numbered item, unless it's the last one
+        return content + '\n'
+    
+    # Apply the formatting
+    formatted_text = re.sub(pattern, add_line_break, text, flags=re.DOTALL)
+    
+    # Clean up excessive line breaks and ensure consistent formatting
+    formatted_text = re.sub(r'\n\s*\n', '\n', formatted_text)  # Remove double line breaks
+    formatted_text = re.sub(r'\n\s*$', '', formatted_text)  # Remove trailing line breaks
+    
+    logger.debug(f"Formatted numbered items:\nBefore: {text[:200]}...\nAfter: {formatted_text[:200]}...")
+    
+    return formatted_text.strip()
+
+
 def parse_analysis_response(response: str) -> Dict[str, str]:
     try:
         # Clean the response by removing asterisks and extra whitespace
         cleaned_response = re.sub(r'\*+', '', response)  # Remove all asterisks
         cleaned_response = re.sub(r'\s+', ' ', cleaned_response)  # Normalize whitespace
         
-        # Updated pattern to handle potential asterisks and whitespace variations
-        pattern = r"STATEMENT:\s*(.*?)\s*EVIDENCE:\s*(.*?)\s*CITATIONS:\s*(.*?)\s*ALIGNMENT\s+CATEGORY:\s*(.*?)\s*JUSTIFICATION:\s*(.*?)$"
+        # Updated pattern to handle numbered format (1. STATEMENT:, 2. EVIDENCE:, etc.)
+        pattern = r"(?:1\.\s*)?STATEMENT:\s*(.*?)\s*(?:2\.\s*)?EVIDENCE:\s*(.*?)\s*(?:3\.\s*)?CITATIONS:\s*(.*?)\s*(?:4\.\s*)?ALIGNMENT\s+CATEGORY:\s*(.*?)\s*(?:5\.\s*)?JUSTIFICATION:\s*(.*?)$"
         match = re.search(pattern, cleaned_response, re.DOTALL | re.IGNORECASE)
         
         if match:
+            # Apply post-processing to format numbered items
+            raw_evidence = match.group(2).strip()
+            raw_citations = match.group(3).strip()
+            
+            evidence = format_numbered_items(raw_evidence)
+            citations = format_numbered_items(raw_citations)
+            
+            logger.info(f"Post-processing applied - Evidence items: {evidence.count('(')}, Citations items: {citations.count('(')}")
+            
             return {
                 "STATEMENT": match.group(1).strip(),
-                "EVIDENCE": match.group(2).strip(),
-                "CITATIONS": match.group(3).strip(),
+                "EVIDENCE": evidence,
+                "CITATIONS": citations,
                 "ALIGNMENT CATEGORY": match.group(4).strip(),
                 "JUSTIFICATION": match.group(5).strip(),
             }
         else:
-            # Fallback: try original pattern in case the above is too aggressive
-            pattern_fallback = r"STATEMENT:(.*?)EVIDENCE:(.*?)CITATIONS:(.*?)ALIGNMENT CATEGORY:(.*?)JUSTIFICATION:(.*)"
+            # Fallback: try original pattern and numbered pattern
+            pattern_fallback = r"(?:1\.\s*)?STATEMENT:(.*?)(?:2\.\s*)?EVIDENCE:(.*?)(?:3\.\s*)?CITATIONS:(.*?)(?:4\.\s*)?ALIGNMENT\s+CATEGORY:(.*?)(?:5\.\s*)?JUSTIFICATION:(.*)"
             match_fallback = re.search(pattern_fallback, response, re.DOTALL | re.IGNORECASE)
             if match_fallback:
+                # Apply post-processing to format numbered items
+                raw_evidence = re.sub(r'\*+', '', match_fallback.group(2)).strip()
+                raw_citations = re.sub(r'\*+', '', match_fallback.group(3)).strip()
+                
+                evidence = format_numbered_items(raw_evidence)
+                citations = format_numbered_items(raw_citations)
+                
+                logger.info(f"Fallback post-processing applied - Evidence items: {evidence.count('(')}, Citations items: {citations.count('(')}")
+                
                 return {
                     "STATEMENT": re.sub(r'\*+', '', match_fallback.group(1)).strip(),
-                    "EVIDENCE": re.sub(r'\*+', '', match_fallback.group(2)).strip(),
-                    "CITATIONS": re.sub(r'\*+', '', match_fallback.group(3)).strip(),
+                    "EVIDENCE": evidence,
+                    "CITATIONS": citations,
                     "ALIGNMENT CATEGORY": re.sub(r'\*+', '', match_fallback.group(4)).strip(),
                     "JUSTIFICATION": re.sub(r'\*+', '', match_fallback.group(5)).strip(),
                 }
@@ -127,8 +180,8 @@ async def process_single_indicator(
     question = indicator["question"]
     evidence = indicator["evidence"]
 
-    # Get relevant VSS chunks for this indicator
-    relevant_chunks = vss_vector_store.get_chunks_for_indicator(question, top_k=5)
+    # Get relevant VSS chunks for this indicator - increased for more comprehensive evidence
+    relevant_chunks = vss_vector_store.get_chunks_for_indicator(question, top_k=10)
     vss_text_for_prompt = vss_vector_store.format_chunks_for_prompt(relevant_chunks)
 
     prompt = analysis_prompt(
@@ -142,7 +195,7 @@ async def process_single_indicator(
     async def _call():
         for attempt in range(max_retries):
             try:
-                response = await openai_client.chat(prompt, max_tokens=4000)
+                response = await openai_client.chat(prompt, max_tokens=6000)
                 parsed_result = {
                     "Indicator ID": indicator_id,
                     **parse_analysis_response(response),
@@ -261,6 +314,7 @@ class AnalysisService:
                 indicator_id = str(indicator_obj.indicator_id)
                 question = str(indicator_obj.indicator)
                 try:
+                    # Increase search results for more comprehensive evidence gathering
                     retrieved_chunks = await rag_searcher.async_search(str(question))
 
                     formatted_chunks = []
@@ -268,6 +322,7 @@ class AnalysisService:
                         page = chunk.metadata.get("page", "unknown")
                         source_file = chunk.metadata.get("source_file", "unknown")  # Get source file
                         page_str = f"{page}" if page is not None else "unknown"
+                        # Include more context and formatting for better evidence extraction
                         content_for_llm = f"[Source: {source_file}, Page: {page_str}]\n{chunk.page_content.strip()}"
                         formatted_chunks.append(content_for_llm)
                                 
@@ -327,10 +382,10 @@ class AnalysisService:
             # Prepare DataFrame with required columns and formatted GPT response
             def format_gpt_response(row):
                 return (
-                    f"STATEMENT: {row.get('STATEMENT', '')}\n"
-                    f"EVIDENCE: {row.get('EVIDENCE', '')}\n"
-                    f"CITATIONS: {row.get('CITATIONS', '')}\n"
-                    f"ALIGNMENT CATEGORY: {row.get('ALIGNMENT CATEGORY', '')}\n"
+                    f"STATEMENT: {row.get('STATEMENT', '')}\n\n"
+                    f"EVIDENCE: {row.get('EVIDENCE', '')}\n\n"
+                    f"CITATIONS: {row.get('CITATIONS', '')}\n\n"
+                    f"ALIGNMENT CATEGORY: {row.get('ALIGNMENT CATEGORY', '')}\n\n"
                     f"JUSTIFICATION: {row.get('JUSTIFICATION', '')}"
                 )
 
