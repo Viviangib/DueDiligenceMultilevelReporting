@@ -8,9 +8,9 @@ logger = logging.getLogger(__name__)
 regulation_service = RegulationService()
 
 
-def create_regulation(db: Session, name: str, file_type: str):
+def create_regulation(db: Session, name: str, file_type: str, namespace: str = None):
     """Create a new regulation entry using the service layer."""
-    return regulation_service.create_regulation(db, name, file_type)
+    return regulation_service.create_regulation(db, name, file_type, namespace)
 
 
 def process_regulation(db: Session, file_path: str, reg_id: int):

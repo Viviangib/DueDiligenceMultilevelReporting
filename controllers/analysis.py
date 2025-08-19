@@ -1,5 +1,4 @@
 import os
-import uuid
 from fastapi import BackgroundTasks, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -25,7 +24,7 @@ def start_analysis_extraction(
     db: Session,
     namespace: str,
 ):
-    from vector_store.pinecone_store import namespace_exists
+    from infrastructure.vectorstores.pinecone_retriever import namespace_exists
 
     if not namespace_exists(namespace):
         raise HTTPException(
@@ -40,8 +39,11 @@ def start_analysis_extraction(
             raise HTTPException(
                 status_code=400, detail="Only PDF and DOCX files are supported"
             )
-        path = f"vss_uploads/{uuid.uuid4()}_{file.filename}"
-        os.makedirs("vss_uploads", exist_ok=True)
+        from core.config import settings
+        base_dir = settings.STORAGE_ROOT
+        vss_dir = os.path.join(base_dir, settings.VSS_UPLOADS_DIR)
+        os.makedirs(vss_dir, exist_ok=True)
+        path = os.path.join(vss_dir, file.filename)
         with open(path, "wb") as f:
             content = file.file.read()
             f.write(content)
@@ -70,5 +72,3 @@ def get_analysis_status_controller(analysis_id: int, db: Session):
             filename="analysis_results.xlsx",
         )
     return analysis
-
-

@@ -1,19 +1,19 @@
-import time
-import uuid
-from typing import List
+from core.config import settings
 from pinecone import Pinecone, ServerlessSpec
 from langchain_openai import OpenAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from config import settings
+from typing import List
+import time
+import uuid
 
-# Initialize Pinecone
+
+# Initialize Pinecone client
 pc = Pinecone(api_key=settings.PINECONE_API_KEY.get_secret_value())
 
 
-def ensure_index():
-    """Ensure the Pinecone index exists and is ready."""
+def ensure_index() -> None:
     if settings.PINECONE_INDEX_NAME not in pc.list_indexes().names():
         pc.create_index(
             name=settings.PINECONE_INDEX_NAME,
@@ -22,18 +22,14 @@ def ensure_index():
             spec=ServerlessSpec(cloud=settings.CLOUD, region=settings.REGION),
         )
         while not pc.describe_index(settings.PINECONE_INDEX_NAME).status["ready"]:
-            print("Waiting for index to be ready...")
             time.sleep(2)
 
 
-def get_embedder():
-    """Return an OpenAI embedder instance."""
-    return OpenAIEmbeddings(
-        model="text-embedding-ada-002", api_key=settings.OPENAI_API_KEY
-    )
+def get_embedder() -> OpenAIEmbeddings:
+    return OpenAIEmbeddings(model="text-embedding-ada-002", api_key=settings.OPENAI_API_KEY)
 
 
-def chunk_text(text: str, chunk_size=1500, chunk_overlap=250) -> List[Document]:
+def chunk_text(text: str, chunk_size: int = 1500, chunk_overlap: int = 250) -> List[Document]:
     """Split text into overlapping chunks."""
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size, chunk_overlap=chunk_overlap
@@ -44,7 +40,7 @@ def chunk_text(text: str, chunk_size=1500, chunk_overlap=250) -> List[Document]:
 
 def embed_and_store_documents(
     documents: List[Document], namespace: str, batch_size: int = 100
-):
+) -> None:
     ensure_index()
     embedder = get_embedder()
 

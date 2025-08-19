@@ -88,7 +88,9 @@ def process_and_save_indicators_bg(content: bytes, filename: str, status_id: int
             data.append({"Indicator ID": indicator_id, "Indicator": indicator_text})
             logger.info(f"[Status {status_id}] Only one indicator extracted.")
         df = pd.DataFrame(data)
-        os.makedirs("indicators", exist_ok=True)
+        from core.config import settings
+        indicators_dir = os.path.join(settings.STORAGE_ROOT, "indicators")
+        os.makedirs(indicators_dir, exist_ok=True)
         excel_path = INDICATOR_FILE_PATH_TEMPLATE.format(status_id)
         logger.info(
             f"[Status {status_id}] Saving extracted indicators to: {excel_path}"

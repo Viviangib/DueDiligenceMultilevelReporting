@@ -5,7 +5,7 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAIClient:
-    def __init__(self, api_key: str = "", model: str = "gpt-4o-mini"):
+    def __init__(self, api_key: str = "", model: str = "gpt-5-mini-2025-08-07"):
         self.client = AsyncOpenAI(api_key=api_key) if api_key else AsyncOpenAI()
         self.model = model
 
@@ -38,3 +38,5 @@ class OpenAIClient:
         except Exception as e:
             logger.error(f"OpenAI GPT call failed: {e}")
             return f"GPT-4 analysis failed: {e}"
+
+

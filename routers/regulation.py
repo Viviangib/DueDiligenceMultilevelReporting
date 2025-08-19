@@ -18,7 +18,6 @@ from controllers.regulation import (
 from schemas.regulation import RegulationStatus
 from utils.security import get_current_user
 import os
-import uuid
 
 router = APIRouter(prefix="/regulations", tags=["regulations"])
 
@@ -35,13 +34,17 @@ def get_db():
 def upload_regulation(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    namespace: str = Form(None, description="Optional Pinecone namespace. If not provided, uses default from settings."),
     db: Session = Depends(get_db),
 ):
     if not file.filename or not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
 
-    file_path = f"uploads/{uuid.uuid4()}_{file.filename}"
-    os.makedirs("uploads", exist_ok=True)
+    from core.config import settings
+    base_dir = settings.STORAGE_ROOT
+    uploads_dir = os.path.join(base_dir, settings.UPLOADS_DIR)
+    os.makedirs(uploads_dir, exist_ok=True)
+    file_path = os.path.join(uploads_dir, file.filename)
 
     with open(file_path, "wb") as f:
         f.write(file.file.read())
@@ -50,14 +53,19 @@ def upload_regulation(
         db,
         str(file.filename),
         str(file.content_type) if file.content_type else "application/pdf",
+        namespace,  # Pass the namespace to the controller
     )
     reg_id = reg.__dict__.get("id", 0)
 
     background_tasks.add_task(process_regulation, db, file_path, reg_id)
 
+    # Get the actual namespace used (from regulation object)
+    actual_namespace = getattr(reg, 'pinecone_namespace', namespace or 'default')
+    
     return {
         "message": "File uploaded, embeddings being created",
         "regulation_id": reg_id,
+        "namespace": actual_namespace,
     }
 
 
