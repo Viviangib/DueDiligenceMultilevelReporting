@@ -121,7 +121,7 @@ def analysis_prompt(
         2. **Understand the Indicator's Context**: Use the supporting documents to gain a full understanding of the indicator's intent and requirements. 
            Focus on information that directly relates to the indicator and avoid inferring additional requirements not explicitly stated.
         3. **Comprehensive Evidence Collection**: Thoroughly review ALL provided evidence from both supporting documents and regulations. 
-           Extract MULTIPLE relevant passages, paragraphs, and sections. Do not stop at the first relevant piece - continue to find all applicable evidence. Please make numerical bullet points
+           Extract COMPLETE FULL PARAGRAPHS and sections, not just single sentences. Each evidence item should be a substantial excerpt that provides full context and meaning. Do not stop at the first relevant piece - continue to find all applicable evidence. Please make numerical bullet points
         4. **Compare to the Regulation**: Using the evidence from the regulation, determine how well the indicator (with its context from the supporting documents) 
            aligns with the regulatory requirements.
         5. **Determine Alignment Level**: Based on your comparison, select the most appropriate alignment category from the provided definitions.
@@ -132,8 +132,8 @@ def analysis_prompt(
           For "Not aligned/Not covered" or "Not applicable," you may cite only from the supporting documents if necessary. Make numerical bullet points with spacing for evidence and citations.
         - **Comprehensive Evidence Gathering**: Extract and cite ALL relevant evidence from both the supporting documents and regulations. Do not limit yourself to 1-2 references. 
           Look for multiple relevant passages, paragraphs, and sections that relate to the indicator. The more comprehensive the evidence, the better the analysis.
-        - **Full Paragraph Extraction**: When citing from regulations, extract the complete paragraph or section, not just a single sentence. 
-          This provides better context and completeness for the analysis.
+        - **Full Paragraph Extraction**: When citing, extract the COMPLETE FULL PARAGRAPH or entire section, not just a single sentence. 
+          Each evidence item should be a substantial, meaningful excerpt that provides complete context. Avoid short snippets or partial sentences.
         - **Accuracy in Justification**: Ensure that your justification accurately refers to the requirements of the regulation and the content of the VSS indicator and supporting documents. 
           Do not confuse or misrefer the two.
         - **Handling Insufficient Evidence**: If the evidence from the supporting documents or the regulation is unclear or insufficient to make a determination, 
@@ -160,17 +160,17 @@ def analysis_prompt(
         
         STATEMENT: <original indicator>
          -two lines of space-
-        EVIDENCE: List ALL relevant evidence with numbered format. Extract complete paragraphs/sections.
-        **CRITICAL**: Each evidence item MUST be on a NEW LINE with a single newline (`\n`) after each numbered item to ensure Excel readability
-        "(1) <First relevant excerpt - complete paragraph or section from any source>
-        (2) <Second relevant excerpt - complete paragraph or section from any source>
-        (3) <Third relevant excerpt - complete paragraph or section from any source>
-        (4) <Additional excerpts as found - aim for 5+ evidence points total>
-        (5) <Continue numbering for all evidence found>
-        (6) <Include both Supporting Documents and Regulation evidence in sequential numbering>"
+        EVIDENCE: List ALL relevant evidence with numbered format. Extract complete paragraphs/sections. Extract all the paragraph insetead of one reference.
+        **CRITICAL**: Each evidence item MUST be a COMPLETE FULL PARAGRAPH and on a NEW LINE with a single newline (`\n`) after each numbered item to ensure Excel readability
+        "(1) <COMPLETE FULL PARAGRAPH - substantial excerpt providing full context from any source>
+        (2) <COMPLETE FULL PARAGRAPH - substantial excerpt providing full context from any source>
+        (3) <COMPLETE FULL PARAGRAPH - substantial excerpt providing full context from any source>
+        (4) <Additional COMPLETE paragraphs as found - aim for 5+ evidence points total>
+        (5) <Continue numbering for all COMPLETE paragraphs found>
+        (6) <Include both Supporting Documents and Regulation evidence in sequential numbering - ALL COMPLETE PARAGRAPHS>"
         If no relevant evidence is found, state "No relevant evidence found".
         Combine evidence from both Supporting Documents and Regulations in one numbered list.
-        MANDATORY: Put each numbered evidence item (1), (2), (3)... on a separate line for Excel readability.
+        MANDATORY: Each evidence item must be a COMPLETE PARAGRAPH, not a single sentence or snippet.
         -two lines of space-
         CITATIONS: List citations with numbered format matching the evidence numbers.
         **CRITICAL**: Each citation item MUST be on a NEW LINE with a single newline (`\n`) after each numbered item to ensure Excel readability.
@@ -193,13 +193,14 @@ def analysis_prompt(
         
         CRITICAL INSTRUCTIONS FOR EVIDENCE:
         1. Use numbered format (1), (2), (3)... for EVIDENCE and CITATIONS sections
-        2. Extract COMPLETE paragraphs from regulations, not just single sentences
+        2. Extract COMPLETE FULL PARAGRAPHS from regulations, not just single sentences or snippets
         3. Find and include ALL relevant evidence from the provided documents
         4. For regulations, prioritize full regulatory text over summaries
         5. Aim for as many evidence points as possible (ranging from 1 to 10) total from all sources combined
         6. Match citation numbers exactly to evidence numbers
-        7. MANDATORY: Put each numbered evidence item (1), (2), (3)... on a NEW LINE for Excel readability
-        8. MANDATORY: Put each numbered citation item (1), (2), (3)... on a NEW LINE for Excel readability
+        7. MANDATORY: Each evidence item must be a COMPLETE PARAGRAPH, not a single sentence
+        8. MANDATORY: Put each numbered evidence item (1), (2), (3)... on a NEW LINE for Excel readability
+        9. MANDATORY: Put each numbered citation item (1), (2), (3)... on a NEW LINE for Excel readability
         
         Format your response exactly as follows with no asterisks or markdown:
 
@@ -287,7 +288,7 @@ and social impacts. Stakeholder engagement is an on-going process that may invol
         
         You must follow the template above for output and all the spacing and format of it.
         
-        CRITICAL FOR EXCEL: Ensure each numbered item (1), (2), (3)... is on its own line within EVIDENCE and CITATIONS sections.
+        CRITICAL FOR EXCEL: Ensure each numbered item (1), (2), (3)... is on its own line within EVIDENCE and CITATIONS sections. Each evidence item must be a COMPLETE FULL PARAGRAPH providing substantial context, not just a single sentence.
         """
 
     return analysis_prompt
