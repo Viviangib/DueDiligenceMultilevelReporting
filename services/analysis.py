@@ -2,7 +2,7 @@ import logging
 import pandas as pd
 from sqlalchemy.orm import Session
 from models.indicator import Indicator
-from prompts.alignment import alignment_def
+from utils.prompts.alignment import alignment_def
 from utils.prompts.analysis import analysis_prompt
 from infrastructure.vectorstores.pinecone_retriever import rag_searcher
 from openai import AsyncOpenAI, RateLimitError
@@ -28,35 +28,22 @@ openai_client = OpenAIClient(model="gpt-4o-mini")
 
 def format_numbered_items(text: str) -> str:
     """
-    Post-process numbered items to ensure proper line breaks for Excel readability.
-    Adds line breaks after each numbered item (1), (2), (3), etc.
+    SIMPLE post-processing: ONLY adds line breaks before existing numbered items.
+    Does NOT modify any content or add numbers - just ensures proper line spacing.
     """
     if not text or not text.strip():
         return text
     
-    # Handle cases where items might already be properly formatted
+    # Don't process if already has good line breaks
     if '\n(' in text:
-        return text  # Already has line breaks
+        return text
     
-    # Pattern to match numbered items like (1), (2), (3) followed by content until next number or end
-    # This handles various formats: (1) content (2) content, etc.
-    pattern = r'(\(\d+\)\s*[^()]*?)(?=\s*\(\d+\)|$)'
+    # VERY SIMPLE: Just add a line break before each " (number)" pattern
+    # This only affects spacing, not content
+    formatted_text = re.sub(r'(\s)(\(\d+\))', r'\n\2', text)
     
-    def add_line_break(match):
-        content = match.group(1).strip()
-        if not content:
-            return content
-        # Add a line break at the end of each numbered item, unless it's the last one
-        return content + '\n'
-    
-    # Apply the formatting
-    formatted_text = re.sub(pattern, add_line_break, text, flags=re.DOTALL)
-    
-    # Clean up excessive line breaks and ensure consistent formatting
-    formatted_text = re.sub(r'\n\s*\n', '\n', formatted_text)  # Remove double line breaks
-    formatted_text = re.sub(r'\n\s*$', '', formatted_text)  # Remove trailing line breaks
-    
-    logger.debug(f"Formatted numbered items:\nBefore: {text[:200]}...\nAfter: {formatted_text[:200]}...")
+    # Clean up any leading line break
+    formatted_text = formatted_text.lstrip('\n')
     
     return formatted_text.strip()
 

@@ -1,5 +1,5 @@
 from typing import Optional
-from prompts.alignment import alignment_def
+from utils.prompts.alignment import alignment_def
 
 
 def report_generation_prompt(

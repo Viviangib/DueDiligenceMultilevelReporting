@@ -137,7 +137,7 @@ class ReportService:
                 )
                 partial_reports = []
                 from utils.prompts.report import report_generation_prompt
-                from prompts.alignment import alignment_def
+                from utils.prompts.alignment import alignment_def
 
                 for idx, chunk in enumerate(chunks):
                     logger.info(
@@ -167,7 +167,7 @@ class ReportService:
                 )
             else:
                 from utils.prompts.report import report_generation_prompt
-                from prompts.alignment import alignment_def
+                from utils.prompts.alignment import alignment_def
 
                 prompt = report_generation_prompt(
                     analysis_data=analysis_data,
