@@ -1,7 +1,6 @@
 """Service layer for regulation analysis."""
 
 import os
-import uuid
 from typing import List, Dict, Optional
 import pandas as pd
 import pdfplumber
@@ -13,11 +12,15 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from openai import AsyncOpenAI
 from pydantic import SecretStr
 import re
+import logging
 
 
 from models.regulation import Regulation
-from config import settings
-from vector_store.pinecone import embed_and_store_documents, chunk_text
+from core.config import settings
+from infrastructure.vectorstores.pinecone_index import embed_and_store_documents, chunk_text
+
+
+logger = logging.getLogger(__name__)
 
 
 class RegulationService:
@@ -32,11 +35,13 @@ class RegulationService:
             model="text-embedding-ada-002", api_key=settings.OPENAI_API_KEY
         )
 
-    def create_regulation(self, db: Session, name: str, file_type: str) -> Regulation:
+    def create_regulation(self, db: Session, name: str, file_type: str, namespace: str = None) -> Regulation:
         """Create a new regulation record."""
-        namespace = settings.PINECONE_NAMESPACE
+        # Use provided namespace or fall back to default from settings
+        pinecone_namespace = namespace if namespace is not None else settings.PINECONE_NAMESPACE
+        logger.info(f"Creating regulation with namespace: {pinecone_namespace} (provided: {namespace}, default: {settings.PINECONE_NAMESPACE})")
         regulation = Regulation(
-            name=name, file_type=file_type, pinecone_namespace=namespace
+            name=name, file_type=file_type, pinecone_namespace=pinecone_namespace
         )
         db.add(regulation)
         db.commit()
@@ -61,7 +66,10 @@ class RegulationService:
                 raise Exception("Regulation not found")
 
             documents = []
+            source_file = os.path.basename(file_path)  # Extract PDF filename
             with pdfplumber.open(file_path) as pdf:
+                total_pages = len(pdf.pages)  # Get total number of pages
+                logger.info(f"Processing PDF: {source_file}, Total pages: {total_pages}")
                 for page_number, page in enumerate(pdf.pages, start=1):
                     page_text = page.extract_text()
                     if not page_text:
@@ -72,6 +80,7 @@ class RegulationService:
                             "page": page_number,
                             "chunk_index": chunk_index,
                             "regulation_id": regulation_id,
+                            "source_file": source_file  
                         }
                         documents.append(chunk)
 

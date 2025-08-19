@@ -1,6 +1,5 @@
 import logging
 import os
-import uuid
 from fastapi import (
     APIRouter,
     UploadFile,
@@ -44,7 +43,7 @@ def run_analysis(
     namespace: str = Form(..., description="Pinecone namespace to use for RAG search"),
     db: Session = Depends(get_db),
 ):
-    from vector_store.pinecone_store import namespace_exists
+    from infrastructure.vectorstores.pinecone_retriever import namespace_exists
 
     if not namespace_exists(namespace):
         from fastapi import HTTPException

@@ -2,7 +2,7 @@ import logging
 from fastapi import FastAPI
 from routers import api_router
 from db import Base, engine
-from config import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 
