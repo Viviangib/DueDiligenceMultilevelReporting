@@ -12,7 +12,6 @@ class OpenAIClient:
     async def chat(
         self,
         prompt: str,
-        temperature: float | None = None,
         max_tokens: int | None = None,
     ) -> str:
         try:
@@ -21,8 +20,7 @@ class OpenAIClient:
                 "messages": [{"role": "user", "content": prompt}],
             }
 
-            if temperature is not None:
-                params["temperature"] = temperature
+
             if max_tokens is not None:
                 # Use max_completion_tokens for newer models, fallback to max_tokens for older ones
                 if any(model_name in self.model.lower() for model_name in ["gpt-4o", "gpt-4-turbo", "gpt-5", "o1"]):

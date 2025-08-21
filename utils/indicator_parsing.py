@@ -49,7 +49,7 @@ async def process_single_chunk(
         try:
             logger.info(f"Processing chunk {chunk_index}, attempt {attempt + 1}")
             response = await openai_client.chat(
-                prompt=prompt, temperature=0, max_tokens=4000
+                prompt=prompt, max_tokens=4000
             )
             if response:
                 indicators = try_extract_json(response)
