@@ -160,7 +160,7 @@ async def process_single_indicator(
     vss_vector_store: Any,
     openai_client: Any,
     max_retries: int = 3,
-    delay_between_calls: float = 0.5,
+    delay_between_calls: float = 1.0,
     semaphore: asyncio.Semaphore = None,
 ) -> Dict[str, Any]:
     indicator_id = indicator["indicator_id"]
@@ -190,7 +190,7 @@ async def process_single_indicator(
                 logger.info(f"Processed indicator {indicator_id}")
                 return parsed_result
             except RateLimitError:
-                wait_time = 2 ** attempt
+                wait_time = (2 ** attempt) + 5  # Add base delay of 5 seconds
                 logger.warning(f"Rate limit hit for {indicator_id}, retrying in {wait_time}s...")
                 await asyncio.sleep(wait_time)
             except Exception as e:
@@ -219,9 +219,14 @@ async def process_single_indicator(
 
     if semaphore:
         async with semaphore:
-            return await _call()
+            result = await _call()
+            # Add small delay between API calls to prevent rate limiting
+            await asyncio.sleep(delay_between_calls)
+            return result
     else:
-        return await _call()
+        result = await _call()
+        await asyncio.sleep(delay_between_calls)
+        return result
 
 
 async def process_gpt_per_indicator(
@@ -229,7 +234,7 @@ async def process_gpt_per_indicator(
     alignment_def: str,
     vss_vector_store: Any,
     openai_client: Any,
-    max_concurrent_tasks: int = 450
+    max_concurrent_tasks: int = 400
 ) -> List[Dict[str, Any]]:
     logger.info(f"Processing {len(indicators)} indicators with in-memory VSS vector store")
     logger.info(f"Vector store stats: {vss_vector_store.get_stats()}")
@@ -265,12 +270,15 @@ class AnalysisService:
 
     async def run_analysis(
         self,
-        db: Session,
         vss_paths: List[str],
         analysis_id: int,
         process_id: str,
         namespace: str,
     ) -> None:
+        # Create a new database session for the background task
+        from db import SessionLocal
+        db = SessionLocal()
+        
         try:
             start_time = datetime.datetime.now()
             logger.info(f"Starting analysis service at {start_time}")
@@ -286,10 +294,10 @@ class AnalysisService:
             vss_vector_store = InMemoryVSSVectorStore()
             
             # Add all VSS documents to vector store with exact page extraction
-            vss_vector_store.add_vss_documents(vss_paths)
+            await vss_vector_store.add_vss_documents(vss_paths)
             
-            # Build the FAISS index
-            vss_vector_store.build_index()
+            # Build the FAISS index asynchronously
+            await vss_vector_store.build_index()
             logger.info(f"Built VSS vector store with stats: {vss_vector_store.get_stats()}")
 
             # Prepare all indicator batches concurrently
@@ -326,8 +334,8 @@ class AnalysisService:
             logger.info(
                 f"Fetching RAG evidence for {len(indicators)} indicators concurrently..."
             )
-            # Batch RAG searches to avoid rate limits (e.g., 50 at a time)
-            rag_batch_size = 50
+            # Batch RAG searches to avoid rate limits (reduced to be conservative)
+            rag_batch_size = 40
             all_batches = []
             for i in range(0, len(indicators), rag_batch_size):
                 batch = indicators[i : i + rag_batch_size]
@@ -338,7 +346,7 @@ class AnalysisService:
                 logger.info(
                     f"Completed RAG batch {i // rag_batch_size + 1}/{len(indicators) // rag_batch_size + 1}"
                 )
-                await asyncio.sleep(1)  # Brief pause to respect rate limits
+                await asyncio.sleep(3)  # Longer pause to respect OpenAI rate limits
 
             # Convert alignment_def to string if necessary
             alignment_def_str = (
@@ -410,3 +418,7 @@ class AnalysisService:
                 logger.error(f"Failed to cleanup vector store: {cleanup_error}")
             
             raise
+        finally:
+            # Always close the database session
+            db.close()
+            logger.info("Database session closed")

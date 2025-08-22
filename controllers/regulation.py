@@ -13,13 +13,21 @@ def create_regulation(db: Session, name: str, file_type: str, namespace: str = N
     return regulation_service.create_regulation(db, name, file_type, namespace)
 
 
-def process_regulation(db: Session, file_path: str, reg_id: int):
+def process_regulation(file_path: str, reg_id: int):
     """Process a regulation file asynchronously using the service layer."""
+    # Create a new database session for the background task
+    from db import SessionLocal
+    db = SessionLocal()
+    
     try:
         regulation_service.process_regulation(db, file_path, reg_id)
         logger.info(f"Regulation processing completed for regulation_id={reg_id}")
     except Exception as e:
         logger.error(f"Regulation processing failed for regulation_id={reg_id}: {e}")
+    finally:
+        # Always close the database session
+        db.close()
+        logger.info("Database session closed")
 
 
 def get_regulation_status(db: Session, regulation_id: int):

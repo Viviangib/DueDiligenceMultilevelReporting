@@ -62,7 +62,9 @@ async def process_single_chunk(
         except (RateLimitError, Exception) as e:
             logger.error(f"Chunk {chunk_index} failed: {e}")
             if isinstance(e, RateLimitError) or "503" in str(e) or "520" in str(e):
-                await asyncio.sleep(2**attempt)  # Exponential backoff
+                wait_time = (2 ** attempt) + 3  # Add base delay of 3 seconds
+                logger.warning(f"Rate limit or server error for chunk {chunk_index}, waiting {wait_time}s...")
+                await asyncio.sleep(wait_time)  # Exponential backoff
                 continue
     return chunk_index, []
 
@@ -102,9 +104,9 @@ async def parse_indicators_with_llm(text: str) -> List[Dict[str, Any]]:
             else:
                 logger.warning(f"No results for chunk {chunk_idx}")
 
-        # Brief pause between batches to avoid rate limits
+        # Longer pause between batches to avoid rate limits
         if i + batch_size < len(chunks):
-            await asyncio.sleep(1)
+            await asyncio.sleep(2)
 
     logger.info(f"Total indicators extracted: {len(all_indicators)}")
     return all_indicators

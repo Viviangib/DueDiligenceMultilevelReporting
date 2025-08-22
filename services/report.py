@@ -157,6 +157,8 @@ class ReportService:
                     )
                     partial = await openai_client.chat(chunk_prompt, max_tokens=4000)
                     partial_reports.append(partial)
+                    # Add delay between report chunks to avoid rate limiting
+                    await asyncio.sleep(2)
                 logger.info("Synthesizing final report from partials...")
                 synthesis_prompt = (
                     f"You are a professional benchmarking report writer. Combine the following {len(partial_reports)} partial benchmarking summaries into a single, cohesive, professional report. Remove any duplicate sections, merge tables, and ensure the report flows as a single document.\n\n"
@@ -165,6 +167,8 @@ class ReportService:
                 final_report = await openai_client.chat(
                     synthesis_prompt, max_tokens=4000
                 )
+                # Add delay after synthesis
+                await asyncio.sleep(1)
             else:
                 from utils.prompts.report import report_generation_prompt
                 from utils.prompts.alignment import alignment_def
@@ -179,6 +183,8 @@ class ReportService:
                 )
                 logger.info("Sending report generation prompt to GPT...")
                 final_report = await openai_client.chat(prompt, max_tokens=4000)
+                # Add delay after report generation
+                await asyncio.sleep(1)
             if not final_report.strip():
                 raise Exception("GPT returned an empty response.")
             os.makedirs(REPORTS_DIR, exist_ok=True)

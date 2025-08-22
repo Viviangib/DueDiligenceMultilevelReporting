@@ -57,7 +57,7 @@ def upload_regulation(
     )
     reg_id = reg.__dict__.get("id", 0)
 
-    background_tasks.add_task(process_regulation, db, file_path, reg_id)
+    background_tasks.add_task(process_regulation, file_path, reg_id)
 
     # Get the actual namespace used (from regulation object)
     actual_namespace = getattr(reg, 'pinecone_namespace', namespace or 'default')

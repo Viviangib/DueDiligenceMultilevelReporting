@@ -51,7 +51,7 @@ def start_analysis_extraction(
     analysis = analysis_service.create_analysis(db)
     analysis_id = int(getattr(analysis, "id"))
     background_tasks.add_task(
-        analysis_service.run_analysis, db, vss_paths, analysis_id, process_id, namespace
+        analysis_service.run_analysis, vss_paths, analysis_id, process_id, namespace
     )
     return {
         "analysis_id": analysis_id,

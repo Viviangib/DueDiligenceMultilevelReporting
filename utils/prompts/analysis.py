@@ -121,7 +121,10 @@ def analysis_prompt(
         2. **Understand the Indicator's Context**: Use the supporting documents to gain a full understanding of the indicator's intent and requirements. 
            Focus on information that directly relates to the indicator and avoid inferring additional requirements not explicitly stated.
         3. **Comprehensive Evidence Collection**: Thoroughly review ALL provided evidence from both supporting documents and regulations. 
-           Extract COMPLETE FULL PARAGRAPHS and sections, not just single sentences. Each evidence item should be a substantial excerpt that provides full context and meaning. Do not stop at the first relevant piece - continue to find all applicable evidence. Please make numerical bullet points
+           Extract COMPLETE FULL PARAGRAPHS and sections EXACTLY AS WRITTEN - copy the text word-for-word without any paraphrasing or changes. 
+           Each evidence item should be a substantial excerpt that provides full context and meaning. Only include evidence that is HIGHLY RELEVANT 
+           and directly relates to the indicator. Quality over quantity - select fewer but more relevant evidence points rather than including 
+           weakly related content. Please make numerical bullet points
         4. **Compare to the Regulation**: Using the evidence from the regulation, determine how well the indicator (with its context from the supporting documents) 
            aligns with the regulatory requirements.
         5. **Determine Alignment Level**: Based on your comparison, select the most appropriate alignment category from the provided definitions.
@@ -130,10 +133,12 @@ def analysis_prompt(
         **Important Rules**:
         - **Evidence Citation**: If the alignment category is "Partially aligned," "Mostly aligned," or "Fully aligned," you must include at least one citation from the regulation in your evidence. 
           For "Not aligned/Not covered" or "Not applicable," you may cite only from the supporting documents if necessary. Make numerical bullet points with spacing for evidence and citations.
-        - **Comprehensive Evidence Gathering**: Extract and cite ALL relevant evidence from both the supporting documents and regulations. Do not limit yourself to 1-2 references. 
-          Look for multiple relevant passages, paragraphs, and sections that relate to the indicator. The more comprehensive the evidence, the better the analysis.
-        - **Full Paragraph Extraction**: When citing, extract the COMPLETE FULL PARAGRAPH or entire section, not just a single sentence. 
-          Each evidence item should be a substantial, meaningful excerpt that provides complete context. Avoid short snippets or partial sentences.
+        - **Relevant Evidence Gathering**: Extract and cite ONLY HIGHLY RELEVANT evidence from both the supporting documents and regulations that directly 
+          correlates the VSS indicator with regulatory requirements. Focus on quality over quantity - select fewer but more relevant evidence points.
+          The VSS supporting documents must help explain how the indicator relates to or aligns with the regulatory requirements.
+        - **Exact Text Extraction**: When citing, extract the COMPLETE FULL PARAGRAPH or entire section EXACTLY AS WRITTEN - copy word-for-word 
+          without any paraphrasing, summarizing, or rewording. Each evidence item must be the original text that provides complete context. 
+          Avoid short snippets or partial sentences.
         - **Accuracy in Justification**: Ensure that your justification accurately refers to the requirements of the regulation and the content of the VSS indicator and supporting documents. 
           Do not confuse or misrefer the two.
         - **Handling Insufficient Evidence**: If the evidence from the supporting documents or the regulation is unclear or insufficient to make a determination, 
@@ -196,7 +201,7 @@ def analysis_prompt(
         2. Extract COMPLETE FULL PARAGRAPHS from regulations, not just single sentences or snippets
         3. Find and include ALL relevant evidence from the provided documents
         4. For regulations, prioritize full regulatory text over summaries
-        5. Aim for as many evidence points as possible (ranging from 1 to 10) total from all sources combined
+        5. Aim for as many evidence points as possible (ranging from 1 to 10) total from all sources combined but make sure they are highly relevant to the indicator.
         6. Match citation numbers exactly to evidence numbers
         7. MANDATORY: Each evidence item must be a COMPLETE PARAGRAPH, not a single sentence
         8. MANDATORY: Put each numbered evidence item (1), (2), (3)... on a NEW LINE for Excel readability

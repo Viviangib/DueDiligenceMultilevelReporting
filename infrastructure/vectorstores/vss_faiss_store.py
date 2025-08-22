@@ -71,22 +71,27 @@ class InMemoryVSSVectorStore:
         self.embeddings: Optional[np.ndarray] = None
         self.index: Optional[faiss.IndexFlatIP] = None
 
-    def add_vss_documents(self, vss_paths: List[str]) -> None:
+    async def add_vss_documents(self, vss_paths: List[str]) -> None:
         """
         Add VSS documents to the vector store with exact page extraction
 
         Args:
             vss_paths: List of paths to VSS files (PDF/DOCX)
         """
+        import asyncio
+        loop = asyncio.get_event_loop()
+        
         for file_path in vss_paths:
             try:
                 ext = os.path.splitext(file_path)[1].lower()
                 source_file = os.path.basename(file_path)
 
                 if ext == ".pdf":
-                    self._process_pdf(file_path, source_file)
+                    # Run file processing in thread executor to avoid blocking
+                    await loop.run_in_executor(None, self._process_pdf, file_path, source_file)
                 elif ext == ".docx":
-                    self._process_docx(file_path, source_file)
+                    # Run file processing in thread executor to avoid blocking
+                    await loop.run_in_executor(None, self._process_docx, file_path, source_file)
                 else:
                     logger.warning(f"Unsupported file type: {ext} for {file_path}")
 
@@ -174,16 +179,23 @@ class InMemoryVSSVectorStore:
 
         logger.info(f"Processed VSS DOCX: {source_file}, created {page_number} page chunks")
 
-    def build_index(self) -> None:
-        """Build the FAISS index from all chunks"""
+    async def build_index(self) -> None:
+        """Build the FAISS index from all chunks asynchronously"""
         if not self.chunks:
             logger.warning("No chunks to index")
             return
 
-        # Generate embeddings for all chunks
+        # Generate embeddings for all chunks using thread executor to avoid blocking
         texts = [chunk.content for chunk in self.chunks]
         logger.info(f"Generating embeddings for {len(texts)} VSS chunks...")
-        self.embeddings = self.embedding_model.encode(texts, show_progress_bar=True)
+        
+        import asyncio
+        loop = asyncio.get_event_loop()
+        
+        # Run the CPU-intensive embedding generation in a thread executor
+        self.embeddings = await loop.run_in_executor(
+            None, self._generate_embeddings_sync, texts
+        )
 
         # Create FAISS index
         dimension = self.embeddings.shape[1]
@@ -194,6 +206,10 @@ class InMemoryVSSVectorStore:
         self.index.add(self.embeddings.astype('float32'))
 
         logger.info(f"Built FAISS index with {len(self.chunks)} chunks, dimension {dimension}")
+    
+    def _generate_embeddings_sync(self, texts):
+        """Synchronous helper method for embedding generation"""
+        return self.embedding_model.encode(texts, show_progress_bar=True)
 
     def search_relevant_chunks(self, query: str, top_k: int = 5) -> List[VSSChunk]:
         """
