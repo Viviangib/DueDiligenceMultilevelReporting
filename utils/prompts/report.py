@@ -5,102 +5,65 @@ from utils.prompts.alignment import alignment_def
 def report_generation_prompt(
     analysis_data: str,
     num_indicators: int,
-    standard_name: str = "User Standard",
-    standard_version: str = "1.0",
-    standard_year: str = "2024",
-    organization: str = "User Organization",
-    report_date: Optional[str] = None,
+    sustainability_framework: str = "User Standard (version 1.0, 2024)",
+    legal_framework: str = "Legal Framework",
 ) -> str:
-    if not report_date:
-        from datetime import datetime
-
-        report_date = datetime.now().strftime("%Y-%m-%d")
     return f"""
-Generate a professional benchmarking summary report for the following standard:
+Generate a professional benchmarking analysis summary report based on the following structure:
 
-Standard name: {standard_name}
-Standard version and year: {standard_version}, {standard_year}
-Founding parties: {organization}
-Date of report: {report_date}
+# Benchmarking Analysis Summary
+
+
 
 **ANALYSIS DATA TO PROCESS:**
 {analysis_data}
 
-The analysis was performed on {num_indicators} indicators. The attached data includes alignment levels, justifications, and evidence for each indicator.
+**IMPORTANT:** Generate a report that follows this exact structure and tone:
 
+**Sustainability framework:** {sustainability_framework}
+**Relevant legal framework:** {legal_framework}
 
-At the top of document please add a Title heading suitable with the name of the standard in mind and the benchmarking summary .
+## Introduction
+This report presents the results of an AI-driven benchmarking analysis, comparing the sustainability framework with the relevant legal framework. The objective is to identify areas of overlap and divergence by assessing indicators in the sustainability framework against requirements of the legal framework.
 
-Please provide:
+## Methodology
+The analysis was conducted at the indicator level. Each indicator in the sustainability framework was evaluated individually, considering its scope, intent, and content, against the relevant legal requirements. Indicators were classified into five alignment levels including "fully aligned", "mostly aligned", "partially aligned", "not aligned", and "not applicable".
 
-- An executive summary of the benchmarking results, including overall alignment statistics, key findings, and patterns.
-- A summary of strengths, weaknesses, and critical gaps identified.
-- Actionable recommendations for improvement.
-- References (APA style).
-- A glossary of key terms used in the analysis.
-- A brief description of the benchmarking process and methodology.
+## Result overview
+A total of {num_indicators} indicators were assessed. Based on the analysis data provided, calculate and present the distribution of alignment levels:
 
+- Count how many indicators fall into each category: "Fully aligned", "Mostly aligned", "Partially aligned", "Not aligned/Not covered", "Not applicable"
+- Present these numbers and percentages clearly
+- Provide an interpretation of what these results indicate about the overall alignment
 
-The document must contain the following headings. Follow the desceiption provided to each one of them :
+Analyze the alignment patterns and highlight:
+- Areas of strong coverage (where many indicators are fully or mostly aligned)
+- Areas needing improvement (where indicators are partially aligned or not aligned)
+- The overall assessment of how well the sustainability framework aligns with the legal framework
 
--Table of Contents
+Include a statement like: "These results indicate that while the framework demonstrates [substantial/moderate/limited] alignment with the given legal framework, there remain several areas where improvements are possible. Detailed indicator-level outcomes are provided in the corresponding Excel file."
 
--General information :
-Standard name: <user_standard_name>
-Standard version and year of publishment: <user_standard_version, user_standard_year>
-Founding parties: <user_org>
-Date of this report generated: <report_date>
+## Key findings
+Based on the analysis data, identify and describe:
+- The main areas where the framework shows robust coverage
+- The key gaps or areas needing improvement
+- Specific themes or topics that emerge from the analysis
 
-About the Global Infrastructure Basel Foundation
-<SAMPLE TEXT>Disclaimer: This report contains AI-generated content intended solely for preliminary benchmarking purposes. Global Infrastructure Basel Foundation makes no representations or warranties of any kind, express or implied, regarding the completeness, accuracy, reliability, or suitability of the information herein. This document does not constitute an official recognition or decision and should not be treated as such
+## Alignment categories
+Present the following alignment categories table exactly as shown:
 
--Abbreviations
-EURD: European Union Deforestation Regulation
-VSS: Voluntary sustainability standard
-AI: Artificial Intelligence
-Add any other relevant abbreviations you find anywhere in the analysis data
+| Alignment level | Definition | Implication |
+|----------------|------------|-------------|
+| **Fully aligned** | This indicator of the assessed framework fully matches or is equivalent to requirements in the referenced document, covering the same scope, intent and content without deviation. | No action needed; considered fully covered. |
+| **Mostly aligned** | The indicator in the assessed framework largely aligns with the referenced document, with only minor differences in scope or stringency. The intent and overarching purpose are clearly addressed. | Considered adequately covered; minor improvements may be considered. |
+| **Partially aligned** | The indicator in the assessed framework reflects some similar intent to the referenced document but lacks essential components. Key elements required to fulfill the reference's intent are missing or insufficiently addressed. | Review the assessed framework and incorporate missing or underdeveloped aspects. |
+| **Not aligned** | The indicator of the assessed framework contradicts or conflicts with the reference's requirements. | Review and revise the assessed framework to resolve contradictions. |
+| **Not applicable** | The referenced document does not address the topic of this indicator of the assessed framework OR this indicator is out of scope of the referenced document. | No action required. |
 
--Benchmarking results
-The preliminary benchmarking analysis to evaluate whether the overall intent of relevant criteria in the European Union Deforestation Regulation (EUDR) has been incorporated into the benchmarked standard, meanwhile, it highlights specific differences at the indicator level. A round of expert review or a public consultation is required to verify the results generated.
-This benchmark results are presented at the indicator level, using different labels and numberings to describe the level of alignment between the indicator in the benchmarked standard and the scope of EUDR
-This is the benchmarking criteria used {alignment_def}. State in report generally with the help of table or whatever.
-
-
--Preliminary benchmarking summary:
-
-In this section, provide an overview of the outcomes from the benchmarking analysis is presented. This summary is organised based on the indicators in the 
-This analysis is limited in scope as it focuses solely on the content of certification schemes and does not extend to evaluating their 
-implementation or real-world impacts. It includes an examination of various classes of indicators commonly used within these schemes—such as 
-“critical,” “must,” “facultative must,” “recommended,” and those subject to a “grace period.” While this categorization helps in 
-understanding the structural emphasis and theoretical rigor of the certification criteria, it does not capture how these standards are 
-applied or enforced in practice. Consequently, conclusions drawn from this assessment should be interpreted with caution, as they do not 
-reflect actual compliance or effectiveness on the ground. So considering these instructions provide a preliminary benchmarking summary.
-Also give the general analysis data headings from below so that the user can know about the headings and how everything went about.
-You can add some sample data from the analysis data in the form of table just to highlight. Do highlight the total number of indicators
-: {num_indicators}
-
-
-<user_standard_name>.
-Indicator ID
-Indicator text
-Alignment level
-Justification
-Evidence
-<file_benchmarking_results>
-
-
--- Recommendations
-Potential gaps, or any recommendation like this 
-
---References
-Provide all references from the analysis data.
-
-
--Glossary 
-provide the glossary from the analysis data
-
--Benchmarking process
-highlight the benchmarking process
-
-Do **not** include any instructional or template headings. Write the report as a finished, professional document, not as a template to be filled in.
+**Instructions:**
+- Write in a professional, analytical tone
+- Use the actual analysis data to calculate real numbers and percentages
+- Be specific about findings rather than generic
+- Do not include template placeholders or instructional text
+- Focus on substantive analysis based on the provided data
 """

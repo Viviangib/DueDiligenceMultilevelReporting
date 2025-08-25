@@ -107,10 +107,8 @@ class ReportService:
         self,
         report_id: int,
         temp_file_path: str,
-        standard_name: str,
-        standard_version: str,
-        standard_year: str,
-        organization: str,
+        sustainability_framework: str,
+        legal_framework: str,
     ):
         db = SessionLocal()
         try:
@@ -146,10 +144,8 @@ class ReportService:
                     chunk_prompt = report_generation_prompt(
                         analysis_data=chunk,
                         num_indicators=num_indicators,
-                        standard_name=standard_name,
-                        standard_version=standard_version,
-                        standard_year=standard_year,
-                        organization=organization,
+                        sustainability_framework=sustainability_framework,
+                        legal_framework=legal_framework,
                     )
                     chunk_prompt = (
                         f"This is part {idx+1} of {len(chunks)} of the analysis data. Generate a partial benchmarking summary for this chunk.\n"
@@ -176,10 +172,8 @@ class ReportService:
                 prompt = report_generation_prompt(
                     analysis_data=analysis_data,
                     num_indicators=num_indicators,
-                    standard_name=standard_name,
-                    standard_version=standard_version,
-                    standard_year=standard_year,
-                    organization=organization,
+                    sustainability_framework=sustainability_framework,
+                    legal_framework=legal_framework,
                 )
                 logger.info("Sending report generation prompt to GPT...")
                 final_report = await openai_client.chat(prompt, max_tokens=4000)

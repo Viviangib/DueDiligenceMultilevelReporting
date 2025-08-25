@@ -38,13 +38,11 @@ async def request_report_generation(
     excel_file: UploadFile = File(
         ..., description="Excel file containing analysis results"
     ),
-    standard_name: str = Form(
-        "User Standard", description="Name of the benchmarked standard"
+    sustainability_framework: str = Form(
+        "User Standard (version 1.0, 2024)", description="Sustainability framework name, version and year"
     ),
-    standard_version: str = Form("1.0", description="Version of the standard"),
-    standard_year: str = Form("2024", description="Year of publication"),
-    organization: str = Form(
-        "User Organization", description="Name of the founding organization"
+    legal_framework: str = Form(
+        "Legal Framework", description="Relevant legal framework"
     ),
     db: Session = Depends(get_db),
 ):
@@ -58,10 +56,8 @@ async def request_report_generation(
             background_tasks,
             excel_file,
             db,
-            standard_name,
-            standard_version,
-            standard_year,
-            organization,
+            sustainability_framework,
+            legal_framework,
         )
     except Exception as e:
         logger.error(f"Error starting report generation: {str(e)}")

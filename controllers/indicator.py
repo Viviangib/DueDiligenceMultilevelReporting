@@ -14,11 +14,11 @@ from constants.indicator import (
 )
 from services.indicator import IndicatorService
 from models.indicator_status import IndicatorStatus
-from utils.file_extraction import (
+from utils.parser.file import (
     extract_text_from_pdf_bytes,
     extract_text_from_docx_bytes,
 )
-from utils.indicator_parsing import parse_indicators_with_llm
+from utils.parser.indicator import parse_indicators_with_llm
 import logging
 from db import SessionLocal
 import uuid

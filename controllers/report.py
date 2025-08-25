@@ -13,10 +13,8 @@ async def start_report_generation(
     background_tasks: BackgroundTasks,
     excel_file: UploadFile,
     db: Session,
-    standard_name: str,
-    standard_version: str,
-    standard_year: str,
-    organization: str,
+    sustainability_framework: str,
+    legal_framework: str,
 ):
     """
     Start background report generation process.
@@ -47,10 +45,8 @@ async def start_report_generation(
             report_service.generate_and_save_report,
             report_id,
             temp_file_path,
-            standard_name,
-            standard_version,
-            standard_year,
-            organization,
+            sustainability_framework,
+            legal_framework,
         )
 
         return {
