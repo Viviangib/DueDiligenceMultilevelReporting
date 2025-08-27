@@ -88,9 +88,18 @@ async def download_report_file(report_id: int, db: Session = Depends(get_db)):
         report_service = ReportService()
         file_path = await report_service.get_report_file_for_download(db, report_id)
         if isinstance(file_path, str) and file_path and os.path.exists(file_path):
+            # Determine media type based on file extension
+            file_ext = os.path.splitext(file_path)[1].lower()
+            if file_ext == '.docx':
+                media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            elif file_ext == '.xlsx':
+                media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            else:
+                media_type = "application/octet-stream"
+                
             return FileResponse(
                 file_path,
-                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                media_type=media_type,
                 filename=os.path.basename(file_path),
             )
         raise HTTPException(status_code=404, detail="Report file not found")

@@ -81,6 +81,7 @@ pydantic_core==2.33.2
 Pygments==2.19.2
 PyMuPDF==1.26.1
 pypandoc==1.15
+pypandoc_binary==1.15
 pypdfium2==4.30.1
 pytest==8.4.1
 pytest-asyncio==0.26.0

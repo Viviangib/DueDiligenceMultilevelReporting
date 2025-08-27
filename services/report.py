@@ -19,6 +19,9 @@ REPORTS_DIR = os.path.join(settings.STORAGE_ROOT, settings.SUMMARY_REPORTS_DIR)
 REPORT_EXCEL_MEDIA_TYPE = (
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
+REPORT_DOCX_MEDIA_TYPE = (
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+)
 
 os.makedirs(TEMP_UPLOAD_DIR, exist_ok=True)
 os.makedirs(REPORTS_DIR, exist_ok=True)
@@ -182,20 +185,47 @@ class ReportService:
             if not final_report.strip():
                 raise Exception("GPT returned an empty response.")
             os.makedirs(REPORTS_DIR, exist_ok=True)
+            
+            # Convert markdown to DOCX using pypandoc
+            import pypandoc
             report_file_path = os.path.abspath(
                 os.path.join(
-                    REPORTS_DIR, "benchmarking_summary_report.md"
+                    REPORTS_DIR, "benchmarking_summary_report.docx"
                 )
             )
-            with open(report_file_path, "w", encoding="utf-8") as f:
-                f.write(final_report)
-            logger.info(f"Report saved at: {report_file_path}")
-            self.update_report_status(
-                db, report_id, ReportStatus.COMPLETED.value, report_file_path
-            )
-            logger.info(
-                f"Report {report_id} generated successfully and status set to COMPLETED"
-            )
+            logger.info(f"Converting markdown content to DOCX at: {report_file_path}")
+            
+            try:
+                # Convert markdown to DOCX using pypandoc with minimal options
+                pypandoc.convert_text(
+                    final_report,
+                    'docx',
+                    format='md',
+                    outputfile=report_file_path,
+                    extra_args=[
+                        '--standalone'
+                    ]
+                )
+                
+                # Verify DOCX file was created
+                if not os.path.exists(report_file_path):
+                    raise Exception(f"Failed to create DOCX file at {report_file_path}")
+                
+
+                
+                logger.info(f"DOCX report saved successfully at: {report_file_path}")
+                
+                # Update database with the DOCX file path
+                logger.info(f"Updating database with DOCX file path: {report_file_path}")
+                self.update_report_status(
+                    db, report_id, ReportStatus.COMPLETED.value, report_file_path
+                )
+                
+                logger.info(f"Report {report_id} generated successfully and status set to COMPLETED")
+                
+            except Exception as e:
+                logger.error(f"Failed to convert markdown to DOCX: {str(e)}")
+                raise Exception(f"Failed to convert markdown to DOCX: {str(e)}")
         except Exception as e:
             logger.error(f"Report generation failed for report {report_id}: {str(e)}")
             self.update_report_status(db, report_id, ReportStatus.ERROR.value)
