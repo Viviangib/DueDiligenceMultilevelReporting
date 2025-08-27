@@ -30,24 +30,39 @@ This report presents the results of an AI-driven benchmarking analysis, comparin
 The analysis was conducted at the indicator level. Each indicator in the sustainability framework was evaluated individually, considering its scope, intent, and content, against the relevant legal requirements. Indicators were classified into five alignment levels including "fully aligned", "mostly aligned", "partially aligned", "not aligned", and "not applicable".
 
 ## Result overview
-A total of {num_indicators} indicators were assessed. Based on the analysis data provided, calculate and present the distribution of alignment levels:
+A total of {num_indicators} indicators were assessed. The distribution of alignment levels of indicators is summarised below:
 
+Based on the analysis data provided, calculate and present the distribution of alignment levels:
 - Count how many indicators fall into each category: "Fully aligned", "Mostly aligned", "Partially aligned", "Not aligned/Not covered", "Not applicable"
-- Present these numbers and percentages clearly
-- Provide an interpretation of what these results indicate about the overall alignment
+- Present these numbers and percentages clearly in a detailed table format
+- Provide comprehensive interpretation of what these results indicate about the overall alignment
 
-Analyze the alignment patterns and highlight:
-- Areas of strong coverage (where many indicators are fully or mostly aligned)
-- Areas needing improvement (where indicators are partially aligned or not aligned)
-- The overall assessment of how well the sustainability framework aligns with the legal framework
+**Provide the Results Overview in the following paragraph format (keep the percentage table but make the analysis in paragraph form):**
 
-Include a statement like: "These results indicate that while the framework demonstrates [substantial/moderate/limited] alignment with the given legal framework, there remain several areas where improvements are possible. Detailed indicator-level outcomes are provided in the corresponding Excel file."
+First, present the percentage table with the alignment distribution.
 
-## Key findings
-Based on the analysis data, identify and describe:
-- The main areas where the framework shows robust coverage
-- The key gaps or areas needing improvement
-- Specific themes or topics that emerge from the analysis
+Then provide the analysis in paragraph format with ALL of the following detailed content:
+
+**Paragraph 1 - Detailed Breakdown:**
+Example :
+"Of these indicators, [X] were categorized as fully aligned, while [Y] were mostly aligned with the framework. A significant portion, [Z] indicators, were partially aligned, indicating that while some components of these indicators are covered, there is room for improvement. Additionally, [W] indicators were categorized as not aligned, suggesting that they do not meet the standards of the sustainability framework. A smaller number, [V] indicators, were marked as not applicable. These results highlight that while the framework is largely adhered to, several areas could be enhanced, particularly for those partially aligned or not aligned with the criteria."
+
+**Paragraph 2 - Strategic Assessment:**
+Example :
+"These results indicate that while the framework demonstrates [substantial/moderate/limited] alignment with the given legal framework, there remain several areas where improvements are possible. In particular, the [X] partially aligned and [Y] not aligned indicators highlight opportunities to strengthen coverage. Detailed indicator-level outcomes are provided in the corresponding Excel file."
+
+**Paragraph 3 - Coverage Analysis with Specific Examples:**
+Example:
+"The benchmarking analysis identified robust coverage in the areas, including [specific areas like waste management, GHG emissions, forest protection, biodiversity preservation, responsible procurement, labor rights, etc.]. However, gaps remain in relation to [specific areas like climate resilience, gender equality, etc.]. These findings suggest that the [framework name] provides strong alignment in many core sustainability areas but could be enhanced to more fully reflect the breadth of requirements under the [legal framework name]."
+
+**IMPORTANT REQUIREMENTS:**
+- Write the entire Results Overview section in flowing paragraph format, not bullet points or subheadings
+- Include the percentage table but make all the analysis and interpretation flow as continuous paragraphs
+- MUST include ALL three paragraphs with the detailed content specified above
+- MUST provide specific examples of areas with robust coverage and areas with gaps
+- MUST analyze the implications of partially aligned and not aligned indicators
+- MUST provide strategic assessment of overall alignment
+- MUST include specific recommendations for improvement based on the analysis
 
 ## Alignment categories
 Present the following alignment categories table exactly as shown:
@@ -66,4 +81,8 @@ Present the following alignment categories table exactly as shown:
 - Be specific about findings rather than generic
 - Do not include template placeholders or instructional text
 - Focus on substantive analysis based on the provided data
+
+**IMPORTANT:** End the report with this exact disclaimer:
+
+This summary is provided for informational purposes only and doesn't imply any official recognition. This work is part of the Due Diligence Multilevel Reporting Project managed by the Global Infrastructure Basel Foundation, and funded by the Swiss State Secretariat for Economic Affairs SECO, through the ISEAL Innovations Fund.
 """
