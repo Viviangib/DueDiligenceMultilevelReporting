@@ -17,7 +17,7 @@ import logging
 
 from models.regulation import Regulation
 from core.config import settings
-from infrastructure.vectorstores.pinecone_index import embed_and_store_documents, chunk_text
+from vectorstores.pinecone_index import embed_and_store_documents, chunk_text
 
 
 logger = logging.getLogger(__name__)

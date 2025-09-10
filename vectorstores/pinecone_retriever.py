@@ -3,7 +3,7 @@ import asyncio
 from langchain_openai import OpenAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from core.config import settings
-from infrastructure.vectorstores.pinecone_index import pc
+from vectorstores.pinecone_index import pc
 
 logger = logging.getLogger(__name__)
 

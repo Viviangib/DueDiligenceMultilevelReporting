@@ -1,12 +1,12 @@
 import json
 import re
-from infrastructure.openai.client import OpenAIClient
-from utils.prompts.indicator import INDICATOR_PROMPT
+from services.openai import OpenAIClient
+from utils.prompts import INDICATOR_PROMPT
 from openai import AsyncOpenAI, RateLimitError
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from core.config import settings
-from infrastructure.openai.client import OpenAIClient
+from services.openai import OpenAIClient
 import logging
 from typing import List, Dict, Any, Tuple
 import asyncio
@@ -73,7 +73,8 @@ async def parse_indicators_with_llm(text: str) -> List[Dict[str, Any]]:
     chunks = split_text_into_chunks(text)
     logger.info(f"Split text into {len(chunks)} chunks for parallel processing")
 
-    # Process chunks in parallel with batch size of 10
+    # Process chunks in par
+    # allel with batch size of 10
     batch_size = 10
     all_indicators = []
 

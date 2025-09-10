@@ -8,7 +8,7 @@ from db import SessionLocal
 from typing import Optional, Dict, Any
 import asyncio
 import pandas as pd
-from infrastructure.openai.client import OpenAIClient
+from services.openai import OpenAIClient
 import tiktoken
 
 logger = logging.getLogger(__name__)
@@ -137,8 +137,8 @@ class ReportService:
                     f"Analysis data is too long, splitting into {len(chunks)} token-based chunks..."
                 )
                 partial_reports = []
-                from utils.prompts.report import report_generation_prompt
-                from utils.prompts.alignment import alignment_def
+                from utils.prompts import report_generation_prompt
+                from utils.prompts import alignment_def
 
                 for idx, chunk in enumerate(chunks):
                     logger.info(
@@ -169,8 +169,8 @@ class ReportService:
                 # Add delay after synthesis
                 await asyncio.sleep(1)
             else:
-                from utils.prompts.report import report_generation_prompt
-                from utils.prompts.alignment import alignment_def
+                from utils.prompts import report_generation_prompt
+                from utils.prompts import alignment_def
 
                 prompt = report_generation_prompt(
                     analysis_data=analysis_data,
@@ -186,25 +186,51 @@ class ReportService:
                 raise Exception("GPT returned an empty response.")
             os.makedirs(REPORTS_DIR, exist_ok=True)
             
-            # Convert markdown to DOCX using pypandoc
+            # Convert markdown to DOCX using pypandoc with reference template
             import pypandoc
             report_file_path = os.path.abspath(
                 os.path.join(
                     REPORTS_DIR, "benchmarking_summary_report.docx"
                 )
             )
+            template_path = os.path.abspath(
+                os.path.join(REPORTS_DIR, "template.docx")
+            )
             logger.info(f"Converting markdown content to DOCX at: {report_file_path}")
+            logger.info(f"Using reference template: {template_path}")
+            
+            # Check if template exists
+            if not os.path.exists(template_path):
+                logger.warning(f"Template file not found at {template_path}, using default styling")
+                template_args = ['--standalone']
+            else:
+                logger.info(f"Using professional template: {template_path}")
+                template_args = ['--standalone', f'--reference-doc={template_path}']
             
             try:
-                # Convert markdown to DOCX using pypandoc with minimal options
+                # Convert markdown to DOCX using pypandoc with reference template
+                # Add additional options for better table rendering
+                css_path = os.path.abspath(
+                    os.path.join(REPORTS_DIR, "template.css")
+                )
+                
+                enhanced_args = template_args + [
+                    '--wrap=auto',
+                    '--toc',  # Add table of contents
+                    f'--css={css_path}' if os.path.exists(css_path) else ''
+                ]
+                
+                # Remove empty CSS argument if file doesn't exist
+                enhanced_args = [arg for arg in enhanced_args if arg]
+                
+                logger.info(f"Converting with pypandoc args: {enhanced_args}")
+                
                 pypandoc.convert_text(
                     final_report,
                     'docx',
                     format='md',
                     outputfile=report_file_path,
-                    extra_args=[
-                        '--standalone'
-                    ]
+                    extra_args=enhanced_args
                 )
                 
                 # Verify DOCX file was created

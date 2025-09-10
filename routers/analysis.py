@@ -43,7 +43,7 @@ def run_analysis(
     namespace: str = Form(..., description="Pinecone namespace to use for RAG search"),
     db: Session = Depends(get_db),
 ):
-    from infrastructure.vectorstores.pinecone_retriever import namespace_exists
+    from vectorstores.pinecone_retriever import namespace_exists
 
     if not namespace_exists(namespace):
         from fastapi import HTTPException

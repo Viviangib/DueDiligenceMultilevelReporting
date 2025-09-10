@@ -24,7 +24,7 @@ def start_analysis_extraction(
     db: Session,
     namespace: str,
 ):
-    from infrastructure.vectorstores.pinecone_retriever import namespace_exists
+    from vectorstores.pinecone_retriever import namespace_exists
 
     if not namespace_exists(namespace):
         raise HTTPException(
