@@ -74,7 +74,6 @@ def prepare_pypandoc_args(template_path: str, css_path: str) -> list:
     
     enhanced_args = template_args + [
         '--wrap=auto',
-        '--toc',  # Add table of contents
         f'--css={css_path}' if os.path.exists(css_path) else ''
     ]
     
