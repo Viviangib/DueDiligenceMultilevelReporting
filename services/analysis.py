@@ -14,7 +14,7 @@ from services.openai import OpenAIClient
 from core.config import settings
 
 # Import helper modules
-from helpers.analysis.helpers import parse_analysis_response, format_gpt_response
+from helpers.analysis.parsers import parse_analysis_response, format_gpt_response
 from helpers.analysis.processors import process_rag_evidence_batch, process_gpt_per_indicator
 
 logger = logging.getLogger(__name__)

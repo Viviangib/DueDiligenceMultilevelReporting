@@ -50,7 +50,7 @@ async def process_single_indicator(
     semaphore: asyncio.Semaphore = None,
 ) -> Dict[str, Any]:
     """Process a single indicator with GPT."""
-    from helpers.analysis.helpers import parse_analysis_response
+    from helpers.analysis.parsers import parse_analysis_response
     
     indicator_id = indicator["indicator_id"]
     question = indicator["question"]
