@@ -16,13 +16,8 @@ from helpers.report.processors import generate_report_from_data, convert_markdow
 
 logger = logging.getLogger(__name__)
 
-# Media types
-REPORT_EXCEL_MEDIA_TYPE = (
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
-REPORT_DOCX_MEDIA_TYPE = (
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-)
+# Import constants
+from utils.constants import ReportMediaTypes
 
 
 class ReportService:

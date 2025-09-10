@@ -6,11 +6,10 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from enums.indicator import IndicatorStatusEnum
 from db import SessionLocal
-from constants.indicator import (
-    INDICATOR_EXTRACT_ERROR,
-    INDICATOR_STATUS_NOT_FOUND,
-    INDICATOR_FILE_PATH_TEMPLATE,
-    INDICATOR_EXCEL_MEDIA_TYPE,
+from utils.constants import (
+    IndicatorMessages,
+    IndicatorPaths,
+    IndicatorMediaTypes,
 )
 from services.indicator import IndicatorService
 from models.indicator_status import IndicatorStatus
@@ -91,7 +90,7 @@ def process_and_save_indicators_bg(content: bytes, filename: str, status_id: int
         from core.config import settings
         indicators_dir = os.path.join(settings.STORAGE_ROOT, "indicators")
         os.makedirs(indicators_dir, exist_ok=True)
-        excel_path = INDICATOR_FILE_PATH_TEMPLATE.format(status_id)
+        excel_path = IndicatorPaths.FILE_PATH_TEMPLATE.value.format(status_id)
         logger.info(
             f"[Status {status_id}] Saving extracted indicators to: {excel_path}"
         )
@@ -112,7 +111,7 @@ def process_and_save_indicators_bg(content: bytes, filename: str, status_id: int
             logger.info(f"[Status {status_id}] Status updated to COMPLETED.")
         db.close()
     except Exception as e:
-        logger.error(f"[Status {status_id}] {INDICATOR_EXTRACT_ERROR.format(str(e))}")
+        logger.error(f"[Status {status_id}] {IndicatorMessages.EXTRACT_ERROR.value.format(str(e))}")
         from models.indicator_status import IndicatorStatus
         from enums.indicator import IndicatorStatusEnum
         from sqlalchemy.orm import Session
@@ -166,7 +165,7 @@ def get_indicator_status_controller(status_id: int, db: Session):
     if isinstance(file_path, str) and file_path and os.path.exists(file_path):
         return FileResponse(
             file_path,
-            media_type=INDICATOR_EXCEL_MEDIA_TYPE,
+            media_type=IndicatorMediaTypes.EXCEL.value,
             filename=os.path.basename(file_path),
         )
     return status_job

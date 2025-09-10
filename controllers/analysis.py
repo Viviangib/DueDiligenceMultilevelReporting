@@ -3,11 +3,10 @@ from fastapi import BackgroundTasks, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from enums.analysis import AnalysisStatusEnum
-from constants.analysis import (
-    ANALYSIS_EXTRACT_ERROR,
-    ANALYSIS_STATUS_NOT_FOUND,
-    ANALYSIS_FILE_PATH_TEMPLATE,
-    ANALYSIS_EXCEL_MEDIA_TYPE,
+from utils.constants import (
+    AnalysisMessages,
+    AnalysisPaths,
+    AnalysisMediaTypes,
 )
 from services.analysis import AnalysisService
 from models.analysis import Analysis
@@ -68,7 +67,7 @@ def get_analysis_status_controller(analysis_id: int, db: Session):
     if status == AnalysisStatusEnum.COMPLETED.value and output_file:
         return FileResponse(
             output_file,
-            media_type=ANALYSIS_EXCEL_MEDIA_TYPE,
+            media_type=AnalysisMediaTypes.EXCEL.value,
             filename="analysis_results.xlsx",
         )
     return analysis
