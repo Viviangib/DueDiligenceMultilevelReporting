@@ -38,8 +38,13 @@ def create_access_token(data: dict, expires_delta: timedelta) -> str:
     )
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
+def get_current_user(request: Request):
+    token = request.cookies.get("auth_token")
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authenticated"
+        )
 
     try:
         payload = jwt.decode(
@@ -48,8 +53,8 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
             algorithms=[settings.ALGORITHM],
         )
         return payload
-
     except JWTError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
         )
