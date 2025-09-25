@@ -57,7 +57,7 @@ async def process_single_indicator(
     evidence = indicator["evidence"]
 
     # Get relevant VSS chunks for this indicator
-    relevant_chunks = vss_vector_store.get_chunks_for_indicator(question, top_k=10)
+    relevant_chunks = vss_vector_store.get_chunks_for_indicator(question, top_k=8)
     vss_text_for_prompt = vss_vector_store.format_chunks_for_prompt(relevant_chunks)
 
     prompt = analysis_prompt(

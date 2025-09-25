@@ -22,14 +22,13 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",  # Local frontend
-        "https://359239a9f80f.ngrok-free.app",  # Current ngrok frontend URL
-        "https://e932bc683e0c.ngrok-free.app",  # Current ngrok backend URL
-        "https://*.ngrok-free.app",  # Allow any ngrok subdomain
-        "https://*.ngrok.io",  # Allow any ngrok.io subdomain
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://166b284f69d7.ngrok-free.app",
+        "https://2a326db9fa82.ngrok-free.app",
     ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 

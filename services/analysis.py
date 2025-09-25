@@ -121,7 +121,7 @@ class AnalysisService:
         
         # Process RAG evidence in batches
         rag_results = await process_rag_evidence_batch(
-            indicators, rag_searcher, start_time, rag_batch_size=10
+            indicators, rag_searcher, start_time, rag_batch_size=40
         )
         
         logger.info(f"RAG phase completed. Retrieved evidence for {len(rag_results)} indicators")
