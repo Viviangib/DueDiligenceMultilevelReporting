@@ -29,6 +29,7 @@ def start_analysis_extraction(
         raise HTTPException(
             status_code=400, detail=f"Pinecone namespace '{namespace}' does not exist."
         )
+    print(f"\n\nNamespace: {namespace}\n\n")
     vss_paths = []
     for file in vss_files:
         if not file.filename:

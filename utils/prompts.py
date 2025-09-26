@@ -264,7 +264,7 @@ Generate a professional benchmarking analysis summary report based on the follow
 **ANALYSIS DATA TO PROCESS:**
 {analysis_data}
 
-**IMPORTANT:** Generate a report that follows this exact structure and tone:
+**IMPORTANT:** Generate a report that follows this exact structure and tone with FIXED HEADINGS ONLY - no additional headings beyond those specified:
 
 **Sustainability framework:** {sustainability_framework}
 **Relevant legal framework:** {legal_framework}
@@ -309,6 +309,7 @@ Example:
 - MUST analyze the implications of partially aligned and not aligned indicators
 - MUST provide strategic assessment of overall alignment
 - MUST include specific recommendations for improvement based on the analysis
+- CRITICAL: Use ONLY the exact headings specified - no additional headings, subheadings, or section breaks beyond: "Benchmarking Analysis Summary", "Sustainability framework:", "Relevant legal framework:", "## Introduction", "## Methodology", "## Result overview", "## Alignment categories"
 
 ## Alignment categories
 Present the following alignment categories table exactly as shown:
@@ -327,6 +328,14 @@ Present the following alignment categories table exactly as shown:
 - Be specific about findings rather than generic
 - Do not include template placeholders or instructional text
 - Focus on substantive analysis based on the provided data
+- STRICT: Use ONLY these exact headings in this exact order - NO additional headings:
+  1. "Benchmarking Analysis Summary" (main title)
+  2. "Sustainability framework: [framework name]" (bold)
+  3. "Relevant legal framework: [legal framework name]" (bold)
+  4. "## Introduction"
+  5. "## Methodology" 
+  6. "## Result overview"
+  7. "## Alignment categories"
 
 **IMPORTANT:** End the report with this exact disclaimer:
 
