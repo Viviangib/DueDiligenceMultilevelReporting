@@ -11,6 +11,7 @@ from utils.constants import (
 from services.analysis import AnalysisService
 from models.analysis import Analysis
 import logging
+from utils.cancel import cancel_registry
 
 analysis_service = AnalysisService()
 logger = logging.getLogger(__name__)

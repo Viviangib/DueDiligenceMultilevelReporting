@@ -12,6 +12,7 @@ from models.analysis import Analysis
 from utils.prompts import alignment_def
 from services.openai import OpenAIClient
 from core.config import settings
+from utils.cancel import cancel_registry
 
 # Import helper modules
 from helpers.analysis.parsers import parse_analysis_response, format_gpt_response
@@ -62,6 +63,12 @@ class AnalysisService:
             start_time = datetime.datetime.now()
             logger.info(f"Starting analysis service at {start_time}")
             
+            # Check cancellation early
+            if cancel_registry.is_cancelled("analysis", analysis_id):
+                logger.info(f"Analysis {analysis_id} cancelled before start")
+                self.update_analysis_status(db, analysis_id, "error", "")
+                return
+
             # Get indicators from database
             indicators = (
                 db.query(Indicator).filter(Indicator.process_id == process_id).all()
@@ -73,10 +80,20 @@ class AnalysisService:
             await self._setup_vss_vector_store(vss_paths)
 
             # Process RAG evidence
-            rag_results = await self._process_rag_evidence(indicators, namespace, start_time)
+            rag_results = await self._process_rag_evidence(indicators, namespace, start_time, analysis_id)
+            if cancel_registry.is_cancelled("analysis", analysis_id):
+                logger.info(f"Analysis {analysis_id} cancelled after RAG phase")
+                self.update_analysis_status(db, analysis_id, "error", "")
+                await self._cleanup()
+                return
 
             # Process with GPT
-            gpt_results = await self._process_with_gpt(rag_results)
+            gpt_results = await self._process_with_gpt(rag_results, analysis_id)
+            if cancel_registry.is_cancelled("analysis", analysis_id):
+                logger.info(f"Analysis {analysis_id} cancelled during GPT phase")
+                self.update_analysis_status(db, analysis_id, "error", "")
+                await self._cleanup()
+                return
 
             # Save results to Excel
             output_file = await self._save_results_to_excel(gpt_results)
@@ -113,7 +130,7 @@ class AnalysisService:
         await self.vss_vector_store.build_index()
         logger.info(f"Built VSS vector store with stats: {self.vss_vector_store.get_stats()}")
 
-    async def _process_rag_evidence(self, indicators: list, namespace: str, start_time: datetime.datetime) -> list:
+    async def _process_rag_evidence(self, indicators: list, namespace: str, start_time: datetime.datetime, analysis_id: int) -> list:
         """Process RAG evidence for all indicators."""
         from vectorstores.pinecone_retriever import RAGSearcher
         
@@ -121,13 +138,13 @@ class AnalysisService:
         
         # Process RAG evidence in batches
         rag_results = await process_rag_evidence_batch(
-            indicators, rag_searcher, start_time, rag_batch_size=40
+            indicators, rag_searcher, start_time, rag_batch_size=40, analysis_id=analysis_id
         )
         
         logger.info(f"RAG phase completed. Retrieved evidence for {len(rag_results)} indicators")
         return rag_results
 
-    async def _process_with_gpt(self, rag_results: list) -> list:
+    async def _process_with_gpt(self, rag_results: list, analysis_id: int) -> list:
         """Process indicators with GPT."""
         # Convert alignment_def to string if necessary
         alignment_def_str = (
@@ -141,7 +158,7 @@ class AnalysisService:
         logger.info(f"RAG phase completed. Starting GPT processing phase...")
         
         gpt_results = await process_gpt_per_indicator(
-            rag_results, alignment_def_str, self.vss_vector_store, openai_client
+            rag_results, alignment_def_str, self.vss_vector_store, openai_client, analysis_id=analysis_id
         )
 
         logger.info(f"GPT processing completed. Total indicators processed: {len(gpt_results)}")

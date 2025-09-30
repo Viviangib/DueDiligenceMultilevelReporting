@@ -17,6 +17,7 @@ from controllers.report import (
 )
 from services.report import ReportService
 from utils.security import get_current_user
+from utils.cancel import cancel_registry
 import os
 
 logger = logging.getLogger(__name__)
@@ -77,6 +78,12 @@ async def get_report_status(report_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Error getting report status for ID {report_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get report status")
+
+
+@router.post("/{report_id}/cancel", dependencies=[Depends(get_current_user)])
+def cancel_report(report_id: int):
+    cancel_registry.cancel("report", report_id)
+    return {"message": f"Cancellation requested for report {report_id}"}
 
 
 @router.get("/{report_id}/download", dependencies=[Depends(get_current_user)])

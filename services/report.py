@@ -8,6 +8,7 @@ from fastapi import HTTPException, UploadFile
 from db import SessionLocal
 from typing import Optional, Dict, Any
 from enums.report import ReportStatus
+from utils.cancel import cancel_registry
 
 # Import helper modules
 from helpers.report.files import save_temp_file, cleanup_temp_file
@@ -55,14 +56,26 @@ class ReportService:
             logger.info(
                 f"Starting report generation for report {report_id} from file: {temp_file_path}"
             )
+            if cancel_registry.is_cancelled("report", report_id):
+                logger.info(f"Report {report_id} cancelled before start")
+                self.update_report_status(db, report_id, ReportStatus.ERROR.value)
+                return
             
             # Prepare data from Excel file
             analysis_data, num_indicators = prepare_report_data_from_excel(temp_file_path)
             
             # Generate report content
             final_report = await generate_report_from_data(
-                analysis_data, num_indicators, sustainability_framework, legal_framework
+                analysis_data,
+                num_indicators,
+                sustainability_framework,
+                legal_framework,
+                report_id,
             )
+            if cancel_registry.is_cancelled("report", report_id):
+                logger.info(f"Report {report_id} cancelled after content generation")
+                self.update_report_status(db, report_id, ReportStatus.ERROR.value)
+                return
             
             if not final_report.strip():
                 raise Exception("GPT returned an empty response.")

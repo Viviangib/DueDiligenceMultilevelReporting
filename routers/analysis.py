@@ -11,6 +11,7 @@ from fastapi import (
     Query,
 )
 from fastapi.responses import FileResponse
+from utils.cancel import cancel_registry
 from sqlalchemy.orm import Session
 from db import SessionLocal
 from controllers.analysis import (
@@ -63,3 +64,9 @@ def run_analysis(
 )
 def get_analysis_status(analysis_id: int, db: Session = Depends(get_db)):
     return get_analysis_status_controller(analysis_id, db)
+
+
+@router.post("/{analysis_id}/cancel", dependencies=[Depends(get_current_user)])
+def cancel_analysis(analysis_id: int):
+    cancel_registry.cancel("analysis", analysis_id)
+    return {"message": f"Cancellation requested for analysis {analysis_id}"}

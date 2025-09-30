@@ -8,7 +8,8 @@ from langchain_core.documents import Document
 from core.config import settings
 from services.openai import OpenAIClient
 import logging
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
+from utils.cancel import cancel_registry
 import asyncio
 
 logger = logging.getLogger(__name__)
@@ -42,10 +43,13 @@ def try_extract_json(content: str):
 
 
 async def process_single_chunk(
-    chunk: str, chunk_index: int, max_retries: int = 3
+    chunk: str, chunk_index: int, max_retries: int = 3, status_id: Optional[int] = None
 ) -> Tuple[int, List[Dict[str, Any]]]:
     prompt = INDICATOR_PROMPT.format(chunk=chunk)
     for attempt in range(max_retries):
+        if status_id is not None and cancel_registry.is_cancelled("indicator", status_id):
+            logger.info(f"[Status {status_id}] Cancel detected before processing chunk {chunk_index}")
+            return chunk_index, []
         try:
             logger.info(f"Processing chunk {chunk_index}, attempt {attempt + 1}")
             response = await openai_client.chat(
@@ -69,7 +73,7 @@ async def process_single_chunk(
     return chunk_index, []
 
 
-async def parse_indicators_with_llm(text: str) -> List[Dict[str, Any]]:
+async def parse_indicators_with_llm(text: str, status_id: Optional[int] = None) -> List[Dict[str, Any]]:
     chunks = split_text_into_chunks(text)
     logger.info(f"Split text into {len(chunks)} chunks for parallel processing")
 
@@ -79,6 +83,9 @@ async def parse_indicators_with_llm(text: str) -> List[Dict[str, Any]]:
     all_indicators = []
 
     for i in range(0, len(chunks), batch_size):
+        if status_id is not None and cancel_registry.is_cancelled("indicator", status_id):
+            logger.info(f"[Status {status_id}] Cancel detected before batch {i//batch_size + 1}")
+            break
         batch_chunks = chunks[i : i + batch_size]
         logger.info(
             f"Processing batch {i//batch_size + 1}/{(len(chunks) + batch_size - 1)//batch_size}"
@@ -86,13 +93,16 @@ async def parse_indicators_with_llm(text: str) -> List[Dict[str, Any]]:
 
         # Create tasks for concurrent processing
         tasks = [
-            process_single_chunk(chunk.page_content, idx + i)
+            process_single_chunk(chunk.page_content, idx + i, status_id=status_id)
             for idx, chunk in enumerate(batch_chunks)
         ]
 
         # Process batch concurrently
         results_by_index: Dict[int, List[Dict[str, Any]]] = {}
         for future in asyncio.as_completed(tasks):
+            if status_id is not None and cancel_registry.is_cancelled("indicator", status_id):
+                logger.info(f"[Status {status_id}] Cancel detected during batch processing; stopping consumption")
+                break
             chunk_index, chunk_indicators = await future
             if chunk_indicators:
                 results_by_index[chunk_index] = chunk_indicators
@@ -107,6 +117,9 @@ async def parse_indicators_with_llm(text: str) -> List[Dict[str, Any]]:
 
         # Longer pause between batches to avoid rate limits
         if i + batch_size < len(chunks):
+            if status_id is not None and cancel_registry.is_cancelled("indicator", status_id):
+                logger.info(f"[Status {status_id}] Cancel detected between batches; stopping")
+                break
             await asyncio.sleep(2)
 
     logger.info(f"Total indicators extracted: {len(all_indicators)}")

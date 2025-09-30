@@ -21,6 +21,7 @@ from utils.parser.indicator import parse_indicators_with_llm
 import logging
 from db import SessionLocal
 import uuid
+from utils.cancel import cancel_registry
 
 indicator_service = IndicatorService()
 logger = logging.getLogger(__name__)
@@ -53,6 +54,9 @@ def start_indicator_extraction(
 def process_and_save_indicators_bg(content: bytes, filename: str, status_id: int):
     logger.info(f"[Status {status_id}] Starting extraction for file: {filename}")
     try:
+        if cancel_registry.is_cancelled("indicator", status_id):
+            logger.info(f"[Status {status_id}] Cancelled before start")
+            return
         if filename.endswith(".pdf"):
             logger.info(f"[Status {status_id}] Extracting text from PDF...")
             extracted_text = extract_text_from_pdf_bytes(content)
@@ -70,8 +74,11 @@ def process_and_save_indicators_bg(content: bytes, filename: str, status_id: int
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         logger.info(f"[Status {status_id}] Starting LLM indicator parsing...")
-        result_text = loop.run_until_complete(parse_indicators_with_llm(extracted_text))
+        result_text = loop.run_until_complete(parse_indicators_with_llm(extracted_text, status_id=status_id))
         logger.info(f"[Status {status_id}] LLM parsing complete.")
+        if cancel_registry.is_cancelled("indicator", status_id):
+            logger.info(f"[Status {status_id}] Cancelled after LLM parsing")
+            return
         data = []
         if isinstance(result_text, list):
             logger.info(

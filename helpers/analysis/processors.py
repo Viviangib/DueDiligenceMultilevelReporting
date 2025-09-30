@@ -5,10 +5,11 @@ import logging
 import asyncio
 import datetime
 import os
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from openai import RateLimitError
 from core.config import settings
 from utils.prompts import analysis_prompt
+from utils.cancel import cancel_registry
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ async def process_single_indicator(
     max_retries: int = 3,
     delay_between_calls: float = 0.2,
     semaphore: asyncio.Semaphore = None,
+    analysis_id: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Process a single indicator with GPT."""
     from helpers.analysis.parsers import parse_analysis_response
@@ -70,6 +72,16 @@ async def process_single_indicator(
 
     async def _call():
         for attempt in range(max_retries):
+            if analysis_id is not None and cancel_registry.is_cancelled("analysis", analysis_id):
+                logger.info(f"[Analysis {analysis_id}] Cancel detected before GPT call for {indicator_id}")
+                return {
+                    "Indicator ID": indicator_id,
+                    "STATEMENT": "",
+                    "EVIDENCE": "",
+                    "CITATIONS": "",
+                    "ALIGNMENT CATEGORY": "",
+                    "JUSTIFICATION": "",
+                }
             try:
                 response = await openai_client.chat(prompt, max_tokens=6000)
                 parsed_result = {
@@ -120,7 +132,8 @@ async def process_gpt_per_indicator(
     alignment_def: str,
     vss_vector_store: Any,
     openai_client: Any,
-    max_concurrent_tasks: int = 500
+    max_concurrent_tasks: int = 500,
+    analysis_id: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
     """Process indicators in batches with GPT."""
     logger.info(f"Processing {len(indicators)} indicators with in-memory VSS vector store")
@@ -135,13 +148,23 @@ async def process_gpt_per_indicator(
     total_batches = (len(indicators) + batch_size - 1) // batch_size
     
     for i in range(0, len(indicators), batch_size):
+        if analysis_id is not None and cancel_registry.is_cancelled("analysis", analysis_id):
+            logger.info(f"[Analysis {analysis_id}] Cancel detected before GPT batch {(i // batch_size) + 1}")
+            break
         batch = indicators[i : i + batch_size]
         current_batch = i // batch_size + 1
         
         logger.info(f"Processing GPT batch {current_batch}/{total_batches} ({len(batch)} indicators)")
         
         tasks = [
-            process_single_indicator(ind, alignment_def, vss_vector_store, openai_client, semaphore=semaphore)
+            process_single_indicator(
+                ind,
+                alignment_def,
+                vss_vector_store,
+                openai_client,
+                semaphore=semaphore,
+                analysis_id=analysis_id,
+            )
             for ind in batch
         ]
         batch_results = await asyncio.gather(*tasks)
@@ -155,7 +178,8 @@ async def process_rag_evidence_batch(
     indicators: List[Any],
     rag_searcher: Any,
     start_time: datetime.datetime,
-    rag_batch_size: int = 50
+    rag_batch_size: int = 50,
+    analysis_id: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
     """Process RAG evidence for indicators in batches."""
     logger.info(f"Fetching RAG evidence for {len(indicators)} indicators concurrently...")
@@ -164,6 +188,9 @@ async def process_rag_evidence_batch(
     total_batches = (len(indicators) + rag_batch_size - 1) // rag_batch_size
     
     for i in range(0, len(indicators), rag_batch_size):
+        if analysis_id is not None and cancel_registry.is_cancelled("analysis", analysis_id):
+            logger.info(f"[Analysis {analysis_id}] Cancel detected before RAG batch {(i // rag_batch_size) + 1}")
+            break
         batch = indicators[i : i + rag_batch_size]
         batch_results = await asyncio.gather(
             *(fetch_evidence_for_indicator(ind, rag_searcher, start_time) for ind in batch)
