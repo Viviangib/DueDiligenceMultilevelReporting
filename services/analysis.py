@@ -152,8 +152,7 @@ class AnalysisService:
             if isinstance(alignment_def, str)
             else json.dumps(alignment_def)
         )
-        logger.info(f"alignment_def type: {type(alignment_def)}, value: {alignment_def_str[:100]}")
-
+    
         logger.info(f"Processing {len(rag_results)} indicators with improved rate limiting...")
         logger.info(f"RAG phase completed. Starting GPT processing phase...")
         

@@ -72,7 +72,7 @@ async def get_report_status_and_file_controller(db: Session, report_id: int):
 
     try:
         report = report_service.get_report_by_id(db, report_id)
-        logger.info(f"[GET] Looking for report_id={report_id}, found: {report}")
+        # logger.info(f"[GET] Looking for report_id={report_id}, found: {report}")
         if not report:
             logger.error(f"Report {report_id} not found in DB")
             raise HTTPException(status_code=404, detail="Report not found")
