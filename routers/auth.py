@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
-from schemas.user import UserCreate, UserLogin, Token
+from schemas.user import UserCreate, UserLogin,Token
 from db import SessionLocal
 from controllers.user import create_user, authenticate_user
 
@@ -21,7 +21,21 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
     return {"message": "User created successfully"}
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
     token = authenticate_user(db, user)
-    return {"access_token": token, "token_type": "bearer"}
+
+    response = Response()
+    response.set_cookie(
+        key="auth_token",
+        value=token,
+        httponly=True,   
+        secure=True,     
+        samesite="None"  
+    )
+    response.body = (
+        f'{{"access_token":"{token}","token_type":"bearer"}}'.encode("utf-8")
+    )
+    response.headers["Content-Type"] = "application/json"
+
+    return response
