@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from schemas.user import UserCreate, UserLogin,Token
 from db import SessionLocal
@@ -25,7 +26,9 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
 def login(user: UserLogin, db: Session = Depends(get_db)):
     token = authenticate_user(db, user)
 
-    response = Response()
+    response = JSONResponse(
+        content={"access_token": token, "token_type": "bearer"}
+    )
     response.set_cookie(
         key="auth_token",
         value=token,
@@ -33,9 +36,5 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         secure=True,     
         samesite="None"  
     )
-    response.body = (
-        f'{{"access_token":"{token}","token_type":"bearer"}}'.encode("utf-8")
-    )
-    response.headers["Content-Type"] = "application/json"
 
     return response
