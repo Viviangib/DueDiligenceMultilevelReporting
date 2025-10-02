@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from routers import api_router
 from db import Base, engine
 from core.config import settings
+import os
+from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
