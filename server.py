@@ -22,10 +22,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://166b284f69d7.ngrok-free.app",
-        "https://2a326db9fa82.ngrok-free.app",
+        "https://ddmr.gib-foundation.org"
     ],
     allow_credentials=True,
     allow_methods=["*"],
