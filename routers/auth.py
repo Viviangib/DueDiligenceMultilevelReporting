@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from schemas.user import UserCreate, UserLogin,Token
@@ -38,3 +38,15 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     )
 
     return response
+
+
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie(
+        key="auth_token",
+        path="/",
+        httponly=True,
+        secure=True,
+        samesite="none"
+    )
+    return {"message": "Logged out"}

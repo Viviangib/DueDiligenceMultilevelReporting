@@ -230,10 +230,16 @@ class InMemoryVSSVectorStore:
         query_embedding = self.embedding_model.encode([query])
         faiss.normalize_L2(query_embedding)
 
+        # Determine number of results to request; FAISS requires k > 0
+        k = min(top_k, len(self.chunks))
+        if k <= 0:
+            logger.warning("FAISS search requested with k<=0; returning no results")
+            return []
+
         # Search
         scores, indices = self.index.search(
             query_embedding.astype('float32'),
-            min(top_k, len(self.chunks)),
+            k,
         )
 
         # Return chunks with scores
