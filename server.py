@@ -37,14 +37,7 @@ app.add_middleware(
 def startup_event():
     log_pinecone_namespace()
     
-    # Ensure required directories exist
-    vss_dir = os.path.join(settings.STORAGE_ROOT, settings.VSS_UPLOADS_DIR)
-    os.makedirs(vss_dir, exist_ok=True)
-    logger.info(f"Ensured VSS uploads directory exists: {vss_dir}")
-
-
 # Create DB tables
 Base.metadata.create_all(bind=engine)
-
 # Register routes
 app.include_router(api_router)
