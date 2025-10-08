@@ -56,21 +56,34 @@ def logout(response: Response):
 
 @router.post("/request-password-reset")
 def request_password_reset_route(payload: PasswordResetRequest, db: Session = Depends(get_db)):
-    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
-    sender_email = os.getenv("SENDER_EMAIL", "no-reply@example.com")
-    aws_region = os.getenv("AWS_REGION", settings.REGION)
-    aws_access_key = os.getenv("AWS_ACCESS_KEY")
-    aws_secret_key = os.getenv("AWS_SECRET_KEY")
+    import logging
+    from urllib.parse import urlparse
+    
+    logger = logging.getLogger(__name__)
+    
+    # Get frontend URL from settings (environment variable)
+    frontend_url = settings.FRONTEND_URL
+    allowed_urls = settings.ALLOWED_FRONTEND_URLS.split(',')
+    
+    # Validate frontend URL
+    if frontend_url not in allowed_urls:
+        logger.warning(f"⚠️ Frontend URL '{frontend_url}' not in allowed list: {allowed_urls}")
+        # Use the first allowed URL as fallback
+        frontend_url = allowed_urls[0].strip()
+        logger.info(f"🔄 Using fallback frontend URL: {frontend_url}")
+    
+    logger.info(f"🚀 Password reset API called for email: {payload.email}")
+    logger.info(f"   Frontend URL: {frontend_url}")
+    logger.info(f"   Allowed URLs: {allowed_urls}")
 
-    return request_password_reset(
+    result = request_password_reset(
         db=db,
         email=payload.email,
         frontend_url=frontend_url,
-        sender_email=sender_email,
-        aws_region=aws_region,
-        aws_access_key=aws_access_key,
-        aws_secret_key=aws_secret_key,
     )
+    
+    logger.info(f"📤 Password reset API response: {result}")
+    return result
 
 
 @router.post("/reset-password")
