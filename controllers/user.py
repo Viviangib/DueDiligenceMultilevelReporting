@@ -7,10 +7,10 @@ from schemas.user import UserCreate, UserLogin
 from utils.security import get_password_hash, verify_password, create_access_token
 from pydantic import EmailStr
 import uuid
-import boto3
-from botocore.exceptions import ClientError
-import os
-from pydantic import EmailStr
+import logging
+from services.email import email_service
+
+logger = logging.getLogger(__name__)
 
 
 def get_user_by_email(db: Session, email: EmailStr):
@@ -44,48 +44,44 @@ def authenticate_user(db: Session, login_data: UserLogin):
     )
 
 
-def request_password_reset(db: Session, email: EmailStr, frontend_url: str, sender_email: str, aws_region: str, aws_access_key: str | None = None, aws_secret_key: str | None = None):
+def request_password_reset(db: Session, email: EmailStr, frontend_url: str):
+    logger.info(f"Password reset requested for email: {email}")
+    
     # Always respond success to prevent user enumeration
     user = get_user_by_email(db, email)
     if not user:
+        logger.warning(f"Password reset requested for non-existent email: {email}")
         return {"message": "If an account exists with that email, we have sent a password reset link"}
 
+    logger.info(f"User found for email: {email}, generating reset token")
+    
     token = str(uuid.uuid4())
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+    logger.info(f"Generated token: {token[:8]}... (expires at: {expires_at})")
 
     db_token = PasswordResetToken(email=email, token=token, expires_at=expires_at)
     db.add(db_token)
     db.commit()
     db.refresh(db_token)
+    logger.info(f"Reset token saved to database with ID: {db_token.id}")
 
     reset_link = f"{frontend_url.rstrip('/')}/reset-password?token={token}"
+    logger.info(f"Generated reset link: {reset_link}")
 
-    ses_client = boto3.client(
-        "ses",
-        region_name=aws_region,
-        aws_access_key_id=aws_access_key,
-        aws_secret_access_key=aws_secret_key,
-    )
-
-    subject = "Password Reset Request"
-    body_text = f"Use the following link to reset your password: {reset_link}"
-    body_html = f"<p>Use the following link to reset your password:</p><p><a href=\"{reset_link}\">Reset Password</a></p>"
-
+    # Send email using SMTP
+    logger.info(f"Attempting to send password reset email to: {email}")
     try:
-        ses_client.send_email(
-            Destination={"ToAddresses": [email]},
-            Message={
-                "Body": {
-                    "Html": {"Charset": "UTF-8", "Data": body_html},
-                    "Text": {"Charset": "UTF-8", "Data": body_text},
-                },
-                "Subject": {"Charset": "UTF-8", "Data": subject},
-            },
-            Source=sender_email,
+        success = email_service.send_password_reset_email(
+            to_email=email,
+            reset_link=reset_link
         )
-    except ClientError as e:
-        # Do not leak SES errors to user; log and continue
-        print(f"SES send_email error: {e}")
+        if success:
+            logger.info(f"✅ Password reset email sent successfully to: {email}")
+        else:
+            logger.error(f"❌ Failed to send password reset email to {email}")
+    except Exception as e:
+        # Do not leak email errors to user; log and continue
+        logger.error(f"❌ Email send error for {email}: {str(e)}", exc_info=True)
 
     return {"message": "If an account exists with that email, we have sent a password reset link"}
 
