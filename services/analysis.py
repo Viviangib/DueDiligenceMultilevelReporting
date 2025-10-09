@@ -112,6 +112,9 @@ class AnalysisService:
         start_time = datetime.datetime.now()
         logger.info(f"Starting analysis service at {start_time}")
         
+        # Store vss_paths for cleanup
+        self.vss_paths = vss_paths
+        
         try:
             # Check cancellation early (no DB needed)
             if cancel_registry.is_cancelled("analysis", analysis_id):
@@ -238,6 +241,21 @@ class AnalysisService:
         if hasattr(self, 'vss_vector_store'):
             self.vss_vector_store.clear()
             logger.info("Cleared in-memory VSS vector store")
+        
+        # Clean up VSS files after analysis is complete
+        if hasattr(self, 'vss_paths'):
+            await self._cleanup_vss_files(self.vss_paths)
+    
+    async def _cleanup_vss_files(self, vss_paths: list[str]):
+        """Clean up VSS files after processing."""
+        import os
+        for file_path in vss_paths:
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    logger.info(f"Cleaned up VSS file: {file_path}")
+            except Exception as e:
+                logger.warning(f"Failed to cleanup VSS file {file_path}: {e}")
 
     async def _cleanup_on_error(self):
         """Clean up resources on error."""

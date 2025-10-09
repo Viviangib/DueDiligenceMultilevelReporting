@@ -103,7 +103,11 @@ async def download_report_file(report_id: int, db: Session = Depends(get_db)):
                 media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             else:
                 media_type = "application/octet-stream"
-                
+            
+            # Schedule cleanup after download
+            from utils.file_cleanup import schedule_file_cleanup
+            schedule_file_cleanup(file_path, delay_seconds=10)
+            
             return FileResponse(
                 file_path,
                 media_type=media_type,

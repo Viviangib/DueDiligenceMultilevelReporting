@@ -67,6 +67,10 @@ def get_analysis_status_controller(analysis_id: int, db: Session):
     status = str(getattr(analysis, "status", ""))
     output_file = str(getattr(analysis, "output_file", ""))
     if status == AnalysisStatusEnum.COMPLETED.value and output_file:
+        # Schedule cleanup after download
+        from utils.file_cleanup import schedule_file_cleanup
+        schedule_file_cleanup(output_file, delay_seconds=10)
+        
         return FileResponse(
             output_file,
             media_type=AnalysisMediaTypes.EXCEL.value,

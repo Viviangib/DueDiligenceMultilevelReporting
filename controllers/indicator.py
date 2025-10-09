@@ -213,6 +213,10 @@ def get_indicator_status_controller(status_id: int, db: Session):
     
     file_path = status_data.get("file")
     if isinstance(file_path, str) and file_path and os.path.exists(file_path):
+        # Schedule cleanup after download
+        from utils.file_cleanup import schedule_file_cleanup
+        schedule_file_cleanup(file_path, delay_seconds=10)
+        
         return FileResponse(
             file_path,
             media_type=IndicatorMediaTypes.EXCEL.value,
