@@ -47,11 +47,14 @@ def authenticate_user(db: Session, login_data: UserLogin):
 def request_password_reset(db: Session, email: EmailStr, frontend_url: str):
     logger.info(f"Password reset requested for email: {email}")
     
-    # Always respond success to prevent user enumeration
+    # Explicitly validate that the email exists; avoid sending emails to unknown addresses
     user = get_user_by_email(db, email)
     if not user:
         logger.warning(f"Password reset requested for non-existent email: {email}")
-        return {"message": "If an account exists with that email, we have sent a password reset link"}
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Email does not exist"
+        )
 
     logger.info(f"User found for email: {email}, generating reset token")
     
