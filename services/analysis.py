@@ -35,17 +35,71 @@ class AnalysisService:
         logger.info(f"Created new analysis job with id {analysis.id}")
         return analysis
 
-    def update_analysis_status(
-        self, db: Session, analysis_id: int, status: str, output_file: str = ""
-    ):
-        """Update analysis status in database."""
-        analysis = db.query(Analysis).filter(Analysis.id == analysis_id).first()
-        if analysis:
-            setattr(analysis, "status", status)
-            if output_file:
-                setattr(analysis, "output_file", output_file)
-            db.commit()
-            logger.info(f"Updated analysis {analysis_id} to status {status}")
+    async def _get_indicators_from_db(self, process_id: str) -> list:
+        """Get indicators from database with proper connection management."""
+        from db import SessionLocal
+        db = SessionLocal()
+        try:
+            logger.info(f"🔌 Opening DB connection to fetch indicators for process_id: {process_id}")
+            indicators = (
+                db.query(Indicator).filter(Indicator.process_id == process_id).all()
+            )
+            logger.info(f"✅ Retrieved {len(indicators)} indicators from database")
+            return indicators
+        except Exception as e:
+            logger.error(f"❌ Failed to fetch indicators from database: {e}")
+            raise
+        finally:
+            db.close()
+            logger.info("🔌 Database connection closed after fetching indicators")
+
+    async def _update_analysis_status(self, analysis_id: int, status: str, output_file: str = ""):
+        """Update analysis status with proper connection management."""
+        from db import SessionLocal
+        db = SessionLocal()
+        try:
+            logger.info(f"🔌 Opening DB connection to update analysis {analysis_id} status to {status}")
+            analysis = db.query(Analysis).filter(Analysis.id == analysis_id).first()
+            if analysis:
+                setattr(analysis, "status", status)
+                if output_file:
+                    setattr(analysis, "output_file", output_file)
+                db.commit()
+                logger.info(f"✅ Updated analysis {analysis_id} to status {status}")
+            else:
+                logger.warning(f"⚠️ Analysis {analysis_id} not found in database")
+        except Exception as e:
+            logger.error(f"❌ Failed to update analysis status: {e}")
+            raise
+        finally:
+            db.close()
+            logger.info("🔌 Database connection closed after updating analysis status")
+
+    async def _get_analysis_status(self, analysis_id: int) -> dict:
+        """Get analysis status with proper connection management."""
+        from db import SessionLocal
+        db = SessionLocal()
+        try:
+            logger.info(f"🔌 Opening DB connection to check analysis {analysis_id} status")
+            analysis = db.query(Analysis).filter(Analysis.id == analysis_id).first()
+            if analysis:
+                status = str(getattr(analysis, "status", ""))
+                output_file = str(getattr(analysis, "output_file", ""))
+                logger.info(f"✅ Analysis {analysis_id} status: {status}")
+                return {
+                    "id": analysis.id,
+                    "status": status,
+                    "output_file": output_file
+                }
+            else:
+                logger.warning(f"⚠️ Analysis {analysis_id} not found")
+                return None
+        except Exception as e:
+            logger.error(f"❌ Failed to get analysis status: {e}")
+            raise
+        finally:
+            db.close()
+            logger.info("🔌 Database connection closed after checking analysis status")
 
     async def run_analysis(
         self,
@@ -54,52 +108,46 @@ class AnalysisService:
         process_id: str,
         namespace: str,
     ) -> None:
-        """Run the complete analysis process."""
-        # Create a new database session for the background task
-        from db import SessionLocal
-        db = SessionLocal()
+        """Run the complete analysis process with proper DB connection management."""
+        start_time = datetime.datetime.now()
+        logger.info(f"Starting analysis service at {start_time}")
         
         try:
-            start_time = datetime.datetime.now()
-            logger.info(f"Starting analysis service at {start_time}")
-            
-            # Check cancellation early
+            # Check cancellation early (no DB needed)
             if cancel_registry.is_cancelled("analysis", analysis_id):
                 logger.info(f"Analysis {analysis_id} cancelled before start")
-                self.update_analysis_status(db, analysis_id, "error", "")
+                await self._update_analysis_status(analysis_id, "error", "")
                 return
 
-            # Get indicators from database
-            indicators = (
-                db.query(Indicator).filter(Indicator.process_id == process_id).all()
-            )
+            # Get indicators from database (open/close DB connection)
+            indicators = await self._get_indicators_from_db(process_id)
             if not indicators:
                 raise Exception("No indicators found in DB for this process_id.")
 
-            # Initialize and build VSS vector store
+            # Initialize and build VSS vector store (no DB needed)
             await self._setup_vss_vector_store(vss_paths)
 
-            # Process RAG evidence
+            # Process RAG evidence (no DB needed)
             rag_results = await self._process_rag_evidence(indicators, namespace, start_time, analysis_id)
             if cancel_registry.is_cancelled("analysis", analysis_id):
                 logger.info(f"Analysis {analysis_id} cancelled after RAG phase")
-                self.update_analysis_status(db, analysis_id, "error", "")
+                await self._update_analysis_status(analysis_id, "error", "")
                 await self._cleanup()
                 return
 
-            # Process with GPT
+            # Process with GPT (no DB needed)
             gpt_results = await self._process_with_gpt(rag_results, analysis_id)
             if cancel_registry.is_cancelled("analysis", analysis_id):
                 logger.info(f"Analysis {analysis_id} cancelled during GPT phase")
-                self.update_analysis_status(db, analysis_id, "error", "")
+                await self._update_analysis_status(analysis_id, "error", "")
                 await self._cleanup()
                 return
 
-            # Save results to Excel
+            # Save results to Excel (no DB needed)
             output_file = await self._save_results_to_excel(gpt_results)
             
-            # Update analysis status
-            self.update_analysis_status(db, analysis_id, "completed", output_file)
+            # Update analysis status (open/close DB connection)
+            await self._update_analysis_status(analysis_id, "completed", output_file)
             
             # Cleanup
             await self._cleanup()
@@ -110,12 +158,9 @@ class AnalysisService:
             
         except Exception as e:
             logger.error(f"Analysis failed: {str(e)}")
-            self.update_analysis_status(db, analysis_id, "error", "")
+            await self._update_analysis_status(analysis_id, "error", "")
             await self._cleanup_on_error()
             raise
-        finally:
-            db.close()
-            logger.info("Database session closed")
 
     async def _setup_vss_vector_store(self, vss_paths: list[str]):
         """Initialize and build the VSS vector store."""

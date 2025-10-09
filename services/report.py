@@ -42,6 +42,38 @@ class ReportService:
         """Update report status in database."""
         update_report_status(db, report_id, status, file_path)
 
+    async def _update_report_status(self, report_id: int, status: str, file_path: Optional[str] = None):
+        """Update report status with proper connection management."""
+        db = SessionLocal()
+        try:
+            logger.info(f"🔌 Opening DB connection to update report {report_id} status to {status}")
+            update_report_status(db, report_id, status, file_path)
+            logger.info(f"✅ Updated report {report_id} status to {status}")
+        except Exception as e:
+            logger.error(f"❌ Failed to update report status: {e}")
+            raise
+        finally:
+            db.close()
+            logger.info("🔌 Database connection closed after updating report status")
+
+    async def _get_report_by_id(self, report_id: int) -> Optional[Any]:
+        """Get report by ID with proper connection management."""
+        db = SessionLocal()
+        try:
+            logger.info(f"🔌 Opening DB connection to get report {report_id}")
+            report = get_report_by_id(db, report_id)
+            if report:
+                logger.info(f"✅ Retrieved report {report_id} from database")
+            else:
+                logger.warning(f"⚠️ Report {report_id} not found in database")
+            return report
+        except Exception as e:
+            logger.error(f"❌ Failed to get report: {e}")
+            raise
+        finally:
+            db.close()
+            logger.info("🔌 Database connection closed after getting report")
+
     async def generate_and_save_report(
         self,
         report_id: int,
@@ -49,22 +81,22 @@ class ReportService:
         sustainability_framework: str,
         legal_framework: str,
     ):
-        """Generate and save report from uploaded file."""
-        db = SessionLocal()
+        """Generate and save report from uploaded file with proper DB connection management."""
         try:
-            self.update_report_status(db, report_id, ReportStatus.IN_PROGRESS.value)
-            logger.info(
-                f"Starting report generation for report {report_id} from file: {temp_file_path}"
-            )
+            # Update status to in progress (open/close DB connection)
+            await self._update_report_status(report_id, ReportStatus.IN_PROGRESS.value)
+            logger.info(f"Starting report generation for report {report_id} from file: {temp_file_path}")
+            
+            # Check cancellation early (no DB needed)
             if cancel_registry.is_cancelled("report", report_id):
                 logger.info(f"Report {report_id} cancelled before start")
-                self.update_report_status(db, report_id, ReportStatus.ERROR.value)
+                await self._update_report_status(report_id, ReportStatus.ERROR.value)
                 return
             
-            # Prepare data from Excel file
+            # Prepare data from Excel file (no DB needed)
             analysis_data, num_indicators = prepare_report_data_from_excel(temp_file_path)
             
-            # Generate report content
+            # Generate report content (no DB needed)
             final_report = await generate_report_from_data(
                 analysis_data,
                 num_indicators,
@@ -74,35 +106,31 @@ class ReportService:
             )
             if cancel_registry.is_cancelled("report", report_id):
                 logger.info(f"Report {report_id} cancelled after content generation")
-                self.update_report_status(db, report_id, ReportStatus.ERROR.value)
+                await self._update_report_status(report_id, ReportStatus.ERROR.value)
                 return
             
             if not final_report.strip():
                 raise Exception("GPT returned an empty response.")
             
-            # Convert to DOCX and save
+            # Convert to DOCX and save (no DB needed)
             report_file_path = convert_markdown_to_docx(final_report)
             
-            # Update database with the DOCX file path
+            # Update database with the DOCX file path (open/close DB connection)
             logger.info(f"Updating database with DOCX file path: {report_file_path}")
-            self.update_report_status(
-                db, report_id, ReportStatus.COMPLETED.value, report_file_path
-            )
-            
+            await self._update_report_status(report_id, ReportStatus.COMPLETED.value, report_file_path)
             logger.info(f"Report {report_id} generated successfully and status set to COMPLETED")
             
         except Exception as e:
             logger.error(f"Report generation failed for report {report_id}: {str(e)}")
-            self.update_report_status(db, report_id, ReportStatus.ERROR.value)
+            await self._update_report_status(report_id, ReportStatus.ERROR.value)
         finally:
             cleanup_temp_file(temp_file_path)
-            db.close()
 
     async def get_report_status_and_file(
         self, db: Session, report_id: int
     ) -> Dict[str, Any]:
-        """Get report status and file information."""
-        report = self.get_report_by_id(db, report_id)
+        """Get report status and file information with proper connection management."""
+        report = await self._get_report_by_id(report_id)
         logger.info(f"[GET] Looking for report_id={report_id}, found: {report}")
         
         if not report:
@@ -143,7 +171,7 @@ class ReportService:
                 response_data.update(
                     {"message": "Report completed but file not found on server"}
                 )
-                self.update_report_status(db, report_id, ReportStatus.ERROR.value)
+                await self._update_report_status(report_id, ReportStatus.ERROR.value)
                 response_data["status"] = ReportStatus.ERROR.value
         elif status_value == ReportStatus.IN_PROGRESS.value:
             response_data["message"] = "Report generation in progress"
@@ -155,8 +183,8 @@ class ReportService:
         return response_data
 
     async def get_report_file_for_download(self, db: Session, report_id: int) -> str:
-        """Get report file path for download."""
-        report = self.get_report_by_id(db, report_id)
+        """Get report file path for download with proper connection management."""
+        report = await self._get_report_by_id(report_id)
         if not report:
             logger.error(f"Report {report_id} not found for download")
             raise HTTPException(status_code=404, detail="Report not found")
