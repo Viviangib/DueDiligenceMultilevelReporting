@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def start_analysis_extraction(
     background_tasks: BackgroundTasks,
-    vss_files: list[UploadFile],
+    vss_files: list[UploadFile] | None,
     process_id: str,
     db: Session,
     namespace: str,
@@ -31,24 +31,25 @@ def start_analysis_extraction(
             status_code=400, detail=f"Pinecone namespace '{namespace}' does not exist."
         )
     print(f"\n\nNamespace: {namespace}\n\n")
-    vss_paths = []
-    for file in vss_files:
-        if not file.filename:
-            raise HTTPException(status_code=400, detail="File must have a name")
-        ext = os.path.splitext(file.filename)[1].lower()
-        if ext not in [".pdf", ".docx"]:
-            raise HTTPException(
-                status_code=400, detail="Only PDF and DOCX files are supported"
-            )
-        from core.config import settings
-        base_dir = settings.STORAGE_ROOT
-        vss_dir = os.path.join(base_dir, settings.VSS_UPLOADS_DIR)
-        os.makedirs(vss_dir, exist_ok=True)
-        path = os.path.join(vss_dir, file.filename)
-        with open(path, "wb") as f:
-            content = file.file.read()
-            f.write(content)
-        vss_paths.append(path)
+    vss_paths: list[str] = []
+    if vss_files:
+        for file in vss_files:
+            if not file.filename:
+                raise HTTPException(status_code=400, detail="File must have a name")
+            ext = os.path.splitext(file.filename)[1].lower()
+            if ext not in [".pdf", ".docx"]:
+                raise HTTPException(
+                    status_code=400, detail="Only PDF and DOCX files are supported"
+                )
+            from core.config import settings
+            base_dir = settings.STORAGE_ROOT
+            vss_dir = os.path.join(base_dir, settings.VSS_UPLOADS_DIR)
+            os.makedirs(vss_dir, exist_ok=True)
+            path = os.path.join(vss_dir, file.filename)
+            with open(path, "wb") as f:
+                content = file.file.read()
+                f.write(content)
+            vss_paths.append(path)
     analysis = analysis_service.create_analysis(db)
     analysis_id = int(getattr(analysis, "id"))
     background_tasks.add_task(

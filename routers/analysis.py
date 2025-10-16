@@ -39,7 +39,7 @@ def get_db():
 @router.post("/run", dependencies=[Depends(get_current_user)])
 def run_analysis(
     background_tasks: BackgroundTasks,
-    vss_files: list[UploadFile] = File(...),
+    vss_files: list[UploadFile] | None = File(None),
     process_id: str = File(...),
     namespace: str = Form(..., description="Pinecone namespace to use for RAG search"),
     db: Session = Depends(get_db),
