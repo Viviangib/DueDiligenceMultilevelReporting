@@ -9,25 +9,25 @@ from typing import Union, List, Dict, Optional
 # =============================================================================
 
 ALIGNMENT_DEF = """
-    "Not applicable": {
-        "Definition": " The regulation does not address the topic of this indicator of the assessed framework OR this indicator is out of scope of the regulation.",
-        "Implication": ""
-    },
-    "Not aligned/Not covered": {
-        "Definition": "This indicator of the assessed framework is required by the regulation, but it is missing in the assessed framework. OR the indicator of the assessed framework is required by the regulation, however, it contradicts the regulation.",
-        "Implication": "The requirements in the assessed standard are not present. Need to be reviewed or included."
-    },
-    "Partially aligned": {
-        "Definition": "This indicator of the assessed framework includes requirements similar to the regulation, but to a limited or substantially lower extent. For example,essential components necessary to fulfill the intent of the regulation is absent and critical aspects of the regulation are missing.",
-        "Implication": "Some aspects are missing and need to be reviewed."
+    "Fully aligned": {
+        "Definition": "This indicator of the assessed framework fully matches or is equivalent to requirements in the referenced document, covering the same scope, intent and content without deviation.",
+        "Implication": "No action needed; considered fully covered."
     },
     "Mostly aligned": {
-        "Definition": "This indicator of the assessed framework is mostly covered by the requirements in the regulation, with minor aspects different extent (either slightly more stringent or slightly less stringent). The intent of this indicator is adequately mentioned and the overarching purpose of the indicator is duly recognized in the regulation",
-        "Implication": "Considered to be covered by the benchmarked standard, and only minor aspects are different or missing."
+        "Definition": "The indicator in the assessed framework largely aligns with the referenced document, with only minor differences in scope or stringency. The intent and overarching purpose are clearly addressed.",
+        "Implication": "Considered adequately covered; minor improvements may be considered."
     },
-    "Fully aligned": {
-        "Definition": "This indicator of the assessed framework fully matches or is equivalent to requirements in the regulation, covering the same scope and extent without deviation.",
-        "Implication": "The requirement in the assessed standard is equivalent to this regulatory criterion. Considered to be fully covered by the benchmarked standard."
+    "Partially aligned": {
+        "Definition": "The indicator in the assessed framework reflects some similar intent to the referenced document but lacks essential components. Key elements required to fulfill the reference's intent are missing or insufficiently addressed.",
+        "Implication": "Review the assessed framework and incorporate missing or underdeveloped aspects."
+    },
+    "Not aligned": {
+        "Definition": "The indicator of the assessed framework contradicts or conflicts with the reference's requirements.",
+        "Implication": "Review and revise the assessed framework to resolve contradictions."
+    },
+    "Not applicable": {
+        "Definition": "The referenced document does not address the topic of this indicator of the assessed framework OR this indicator is out of scope of the referenced document.",
+        "Implication": "No action required."
     }
 }
 """
@@ -45,202 +45,131 @@ def analysis_prompt(
     evidence: Union[str, List[str]],
 ) -> str:
     """Generate analysis prompt for single indicator evaluation."""
-    
+
     analysis_prompt = f"""
-        You are a regulatory compliance expert specializing in law, ESG, and sustainability standards. 
-        Your task is to evaluate whether specific indicators from a voluntary sustainability standard (VSS) 
-        align with the requirements of a sustainability-related regulation.
+You are a regulatory compliance expert specializing in law, ESG, and sustainability standards.
 
-        You are provided with:
-        - An **Indicator** from the VSS: This is a statement or question that needs to be assessed.
-        - **Supporting Documents** from the VSS: These provide context and explanation for the indicator.
-        - **Evidence from the Regulation**: These are relevant passages from the regulatory text that pertain to the indicator.
+Your task is to evaluate **how well an indicator (from a sustainability framework)** — together with its supporting texts from a Voluntary Sustainability Standard (VSS) — **meets the requirements of the Regulation**.
 
-        Your goal is to assess how well the indicator, as explained by the supporting documents, meets the requirements 
-        specified in the regulation.
+The **Regulation is the benchmark (the standard of truth)**.  
+The **Indicator + VSS texts** are what you are evaluating **against** the Regulation.
 
-        Follow these steps:
-        1. **Rephrase the Indicator (if necessary)**: If the indicator is phrased as a question, rephrase it into a clear positive statement. 
-           If it is already a statement, proceed as is.
-        2. **Understand the Indicator's Context**: Use the supporting documents to gain a full understanding of the indicator's intent and requirements. 
-           Focus on information that directly relates to the indicator and avoid inferring additional requirements not explicitly stated.
-        3. **Comprehensive Evidence Collection**: Thoroughly review ALL provided evidence from both supporting documents and regulations. 
-           Extract COMPLETE FULL PARAGRAPHS and sections EXACTLY AS WRITTEN - copy the text word-for-word without any paraphrasing or changes. 
-           Each evidence item should be a substantial excerpt that provides full context and meaning. Only include evidence that is HIGHLY RELEVANT 
-           and directly relates to the indicator. Quality over quantity - select fewer but more relevant evidence points rather than including 
-           weakly related content. Please make numerical bullet points
-        4. **Compare to the Regulation**: Using the evidence from the regulation, determine how well the indicator (with its context from the supporting documents) 
-           aligns with the regulatory requirements.
-        5. **Determine Alignment Level**: Based on your comparison, select the most appropriate alignment category from the provided definitions.
-        6. **Justify Your Choice**: Provide a clear justification for your alignment category, citing specific evidence from both the supporting documents and the regulation.
+---
 
-        **Important Rules**:
-        - **Evidence Citation**: If the alignment category is "Partially aligned," "Mostly aligned," or "Fully aligned," you must include at least one citation from the regulation in your evidence. 
-          For "Not aligned/Not covered" or "Not applicable," you may cite only from the supporting documents if necessary. Make numerical bullet points with spacing for evidence and citations.
-        - **Relevant Evidence Gathering**: Extract and cite ONLY HIGHLY RELEVANT evidence from both the supporting documents and regulations that directly 
-          correlates the VSS indicator with regulatory requirements. Focus on quality over quantity - select fewer but more relevant evidence points.
-          The VSS supporting documents must help explain how the indicator relates to or aligns with the regulatory requirements.
-        - **Exact Text Extraction**: When citing, extract the COMPLETE FULL PARAGRAPH or entire section EXACTLY AS WRITTEN - copy word-for-word 
-          without any paraphrasing, summarizing, or rewording. Each evidence item must be the original text that provides complete context. 
-          Avoid short snippets or partial sentences.
-        - **Accuracy in Justification**: Ensure that your justification accurately refers to the requirements of the regulation and the content of the VSS indicator and supporting documents. 
-          Do not confuse or misrefer the two.
-        - **Handling Insufficient Evidence**: If the evidence from the supporting documents or the regulation is unclear or insufficient to make a determination, 
-          state this clearly in your justification and choose the alignment category that best reflects the available information.
-       
-        **Alignment Definitions**:
-        {alignment_def}
+### Step-by-Step Procedure:
 
-        **Indicator Details**:
-        - Criteria ID: {indicator_id}
-        - Type: Statement
-        - Indicator: {question}
+1. **Rephrase the Indicator (if necessary)**  
+   If the indicator is phrased as a question, rewrite it as a clear, positive statement. Otherwise, use it as-is.
 
-        **Supporting Documents (from the VSS)**: {vss_texts}
+2. **Understand the Indicator's Context**  
+   Use the VSS supporting documents only to understand what the indicator *means* or *covers*.  
+   Do **not** assess alignment based on the VSS itself — it only clarifies the indicator’s intent.  
+   Alignment is determined **solely against the Regulation.**
 
-        **Evidence from the Regulation**: {evidence}
+3. **Evidence Collection**  
+   Review all text provided from the supporting documents (VSS) only to interpret what the indicator means, not to judge alignment.
+   Then, extract complete paragraphs or sections from the Regulation that directly address the indicator.
+   Present:
+   - VSS excerpts first (for context only)
+   - Regulation excerpts second (for alignment assessment)
+   Quality over quantity: fewer, stronger pieces of evidence are preferred.  
+   Present them as **numbered items**.  
+   Include **both sources** (VSS and Regulation) in the same evidence list
+   Use complete, unedited paragraphs. Do not paraphrase or mix sources. 
+   -Rank both evidences and their corresponding citations from most relevant to least relevant.
 
+4. **Compare to the Regulation**  
+   Analyze how the indicator — clarified by the VSS — aligns with the Regulation's requirements.  
+   **Ignore any VSS language when deciding alignment. VSS text is purely explanatory and cannot be used as evidence of compliance.**
+   The Regulation evidence alone determines the alignment outcome. 
+   The absence of Regulation evidence means the indicator **cannot be considered aligned.**
 
+5. **Determine the Alignment Category**  
+   Choose exactly one category from the following definitions:  
+   {alignment_def}  
 
-        #OUTPUT :
+   **Important Rule:**  
+   - “Fully aligned” or “Mostly aligned” **require at least one direct Regulation citation** confirming compliance or equivalence.  
+   - If no Regulation evidence is found or it only partially supports the indicator, select “Partially aligned” or “Not aligned.”  
+   - Never assign higher alignment solely because the VSS explains the indicator well.
 
-        For this indicator, provide the following in your response:
-        MANDATORY: Include two empty lines between each numbered section (1., 2., 3., 4., 5.) for proper formatting.
-        
-        STATEMENT: <original indicator>
-         -two lines of space-
-        EVIDENCE: List ALL relevant evidence with numbered format. Extract complete paragraphs/sections. Extract all the paragraph insetead of one reference.
-        **CRITICAL**: Each evidence item MUST be a COMPLETE FULL PARAGRAPH and on a NEW LINE with a single newline (`\n`) after each numbered item to ensure Excel readability
-        "(1) <COMPLETE FULL PARAGRAPH - substantial excerpt providing full context from any source>
-        (2) <COMPLETE FULL PARAGRAPH - substantial excerpt providing full context from any source>
-        (3) <COMPLETE FULL PARAGRAPH - substantial excerpt providing full context from any source>
-        (4) <Additional COMPLETE paragraphs as found - aim for 5+ evidence points total>
-        (5) <Continue numbering for all COMPLETE paragraphs found>
-        (6) <Include both Supporting Documents and Regulation evidence in sequential numbering - ALL COMPLETE PARAGRAPHS>"
-        If no relevant evidence is found, state "No relevant evidence found".
-        Combine evidence from both Supporting Documents and Regulations in one numbered list.
-        MANDATORY: Each evidence item must be a COMPLETE PARAGRAPH, not a single sentence or snippet.
-        -two lines of space-
-        CITATIONS: List citations with numbered format matching the evidence numbers.
-        **CRITICAL**: Each citation item MUST be on a NEW LINE with a single newline (`\n`) after each numbered item to ensure Excel readability.
-        "(1) {{Document Name, Page X, Section/Article Y}}
-        (2) {{Document Name, Page X, Section/Article Y}}
-        (3) {{Document Name, Page X, Section/Article Y}}
-        (4) {{Document Name, Page X, Section/Article Y}}
-        (5) {{Document Name, Page X, Section/Article Y}}
-        (6) {{Document Name, Page X, Section/Article Y}}"
-        Always include the document name, page number, and section/article if available. Use curly braces around each citation.
-        Each citation number should correspond directly to the evidence number above.
-        MANDATORY: Put each numbered citation item (1), (2), (3)... on a separate line for Excel readability.
-         -two lines of space-
-        ALIGNMENT CATEGORY: <chosen category>
-         -two lines of space-
-        JUSTIFICATION: <detailed justification>
+6. **Justify the Decision**  
+   - Treat the **Regulation as the benchmark standard.**  
+   - Explain how well the **Indicator + VSS texts** meet that regulatory requirement.  
+   - Reference evidence from both:
+       - Supporting documents → show what the indicator requires.
+      - Regulation → show what is actually required by law.  
+   - **When writing the justification, refer to the VSS only for indicator interpretation. The strength or weakness of the VSS explanation does not affect alignment — only the Regulation text does.**
+   - If Regulation evidence is missing, explicitly state this and assign a conservative category ("Partially aligned" or "Not aligned").  
+   - Be decisive and consistent with the evidence.
 
+---
 
-        IMPORTANT: Do NOT use any markdown formatting (**, *, #, etc.) in your response. Use plain text only.
-        
-        CRITICAL INSTRUCTIONS FOR EVIDENCE:
-        1. Use numbered format (1), (2), (3)... for EVIDENCE and CITATIONS sections
-        2. Extract COMPLETE FULL PARAGRAPHS from regulations, not just single sentences or snippets
-        3. Find and include ALL relevant evidence from the provided documents
-        4. For regulations, prioritize full regulatory text over summaries
-        5. Aim for as many evidence points as possible (ranging from 1 to 10) total from all sources combined but make sure they are highly relevant to the indicator.
-        6. Match citation numbers exactly to evidence numbers
-        7. MANDATORY: Each evidence item must be a COMPLETE PARAGRAPH, not a single sentence
-        8. MANDATORY: Put each numbered evidence item (1), (2), (3)... on a NEW LINE for Excel readability
-        9. MANDATORY: Put each numbered citation item (1), (2), (3)... on a NEW LINE for Excel readability
-        
-        Format your response exactly as follows with no asterisks or markdown:
+### Additional Rules:
 
-        1. STATEMENT: ...
+- **Evidence Citation Rule:**  
+  For “Partially aligned,” “Mostly aligned,” or “Fully aligned,” include at least one **Regulation citation**.  
+  If no Regulation citation exists, downgrade to “Partially aligned” or “Not aligned.”  
+  For “Not aligned/Not covered” or “Not applicable,” Regulation citations are optional.
 
+- **VSS Text Quality Warning:**  
+  The VSS supporting documents were retrieved via RAG. Their quality and relevance are not guaranteed.  
+  VSS evidence is **contextual only** and cannot replace Regulation alignment.
 
-        2. EVIDENCE:
-        (1) "..."
-        (2) "..."
-        (3) "..."
+- **Critical Evidence Extraction Rules:**  
+  - Use complete paragraphs or sections only (no snippets).From both VSS texts (if provided) and Regulations 
+  - Each numbered evidence item must be on a new line for Excel readability.  
+  - Match evidence and citation numbering exactly.  
+  - Include both Supporting Document and Regulation excerpts in a single combined evidence list.
 
+- **Handling Unclear Cases:**  
+  If the Regulation evidence is vague, missing, or incomplete, state that clearly and select the most conservative (lowest confidence) alignment category.
 
-        3. CITATIONS:
-        (1) {{Document Name, Page X, Article Y}}
-        (2) {{Document Name, Page X, Article Y}}
-        (3) {{Document Name, Page X, Article Y}}
+---
 
+### Required Output Format (Plain Text Only)
 
-        4. ALIGNMENT CATEGORY: ...
+1. STATEMENT: [indicator statement]
 
-
-        5. JUSTIFICATION: ...
-
-        CRITICAL: Add two empty lines between each numbered section (1., 2., 3., 4., 5.) for proper spacing and readability.
-        
-        EXAMPLE WITH PROPER SPACING:
-        1. STATEMENT: [content]
-
-
-        2. EVIDENCE: 
-        (1) "[evidence content]"
-        (2) "[evidence content]"
-        (3) "[evidence content]"
-
-
-        3. CITATIONS:
-        (1) {{Document Name, Page X, Article Y}}
-        (2) {{Document Name, Page X, Article Y}}
-        (3) {{Document Name, Page X, Article Y}}
-
-
-        4. ALIGNMENT CATEGORY: [content]
-
-
-        5. JUSTIFICATION: [content]
-
-        NOTE: you must number all these categories from statement to justification ( 1 to 5)      
-        
-        SAMPLE OUTPUT:
-        
-        1. STATEMENT: The stakeholder engagement plan has differentiated measures in place to allow for the effective participation of people or communities identified as disadvantaged or vulnerable.
 
 2. EVIDENCE:
-(1) "Member States shall ensure that companies take appropriate measures to carry out effective engagement with stakeholders, in accordance with this Article."
-
-(2) "In consulting stakeholders, companies shall identify and address barriers to engagement and shall ensure that participants are not the subject of retaliation or retribution, including by maintaining confidentiality or anonymity."
-
-(3) "Meaningful engagement with consulted stakeholders should take due account of barriers to engagement, ensure that stakeholders are free from retaliation and retribution, including by maintaining confidentiality and anonymity, and particular attention should be paid to the needs of vulnerable stakeholders, and to overlapping vulnerabilities and intersecting factors, including by taking into account potentially affected groupings or communities..."
-
-(4) "Stakeholder Engagement: Basis for building strong, constructive, and responsive relationships that are essential for the successful management of a project's environmental
-and social impacts. Stakeholder engagement is an on-going process that may involve, in varying degrees, the following elements: stakeholder analysis and planning, disclosure and dissemination of information, consultation and participation, grievance mechanism, and on-going reporting to affected communities. The nature, frequency, and level of effort of stakeholder engagement may vary considerably and will be commensurate with the project's risks and adverse impacts, and the project's phase of development."
-
-(5) "Stakeholder Engagement Plan: A plan that lays out actions to conduct stakeholder engagement, with a dedicated focus on stakeholder groups that are external to the core operations of the infrastructure project, such as affected communities, local government authorities, non-governmental and other civil society organisations, local institutions, and other interested or affected parties. Where applicable, the Stakeholder Engagement Plan should include differentiated measures to allow the effective participation of those identified as disadvantaged or vulnerable. When the stakeholder engagement process depends substantially on community representatives, the project should make every reasonable effort to verify that such persons do in fact represent the views of affected communities and that they can be relied upon to faithfully communicate the results of consultations to their constituents."
-
-(6) "Vulnerable Groups: Vulnerable people are those individuals within the project area who face a higher risk of falling into poverty compared to others in similar contexts. This group encompasses various segments of the population, including but not limited to: the elderly, the mentally and physically disabled, at-risk children and youth, ex-combatants, internally displaced people and returning refugees, HIV/AIDS-affected individuals and households, religious and ethnic minorities, and, in some societies, women."
+(1) "[Full paragraph or section]"
+(2) "[Full paragraph or section]"
+(3) "[Full paragraph or section]"
 
 
 3. CITATIONS:
-(1) {{Corporate Sustainability Due Diligence Directive (EU) 2024/1760, Page 8, Article 13(1)}}
+(1) {{Document Name, Page X, Article Y}}
+(2) {{Document Name, Page X, Article Y}}
+(3) {{Document Name, Page X, Article Y}}
 
-(2) {{Corporate Sustainability Due Diligence Directive (EU) 2024/1760, Page 8, Article 13(5)}}
 
-(3) {{Corporate Sustainability Due Diligence Directive (EU) 2024/1760, Page 15, Recital 65}}
+4. ALIGNMENT CATEGORY: [category]
 
-(4) {{FAST-Infra Label_Glossary, Page 22}}
 
-(5) {{FAST-Infra Label_Glossary, Page 22}}
+5. JUSTIFICATION: [reasoning]
 
-(6) {{FAST-Infra Label_Glossary, Page 24}}
+**Formatting Rules:**
+- Always number sections 1–5 as above.
+- Leave two blank lines between each major section (1–5).
+- Each numbered evidence and citation item must be on its own line.
+- Do not use any markdown (**bold**, *, #, etc.).
+- Be confident and decisive — choose exactly one alignment category.
 
-4. ALIGNMENT CATEGORY: Fully aligned
+---
 
-5. JUSTIFICATION: The statement specifies the need for differentiated measures in stakeholder engagement to ensure the effective participation of disadvantaged or vulnerable communities, which is explicitly mentioned in the legal act. The VSS supporting documents clearly outline that the engagement plan must consider the vulnerabilities of certain groups, paralleling the directive's emphasis on paying particular attention to vulnerable stakeholders. Therefore, both sources align fully on the need for tailored engagement measures, leading to the conclusion that this indicator is fully aligned with the legal requirements.
-        
-        
-        You must follow the template above for output and all the spacing and format of it.
-        
-        CRITICAL FOR EXCEL: Ensure each numbered item (1), (2), (3)... is on its own line within EVIDENCE and CITATIONS sections. Each evidence item must be a COMPLETE FULL PARAGRAPH providing substantial context, not just a single sentence.
-        """
+**Indicator Details:**
+- Criteria ID: {indicator_id}
+- Indicator: {question}
+
+**Supporting Document Text (VSS):** {vss_texts}
+
+**Regulation Text:** {evidence}
+"""
 
     return analysis_prompt
+
+
 
 
 # =============================================================================
