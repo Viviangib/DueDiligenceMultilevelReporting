@@ -21,7 +21,7 @@ def namespace_exists(namespace: str) -> bool:
 
 
 class RAGSearcher:
-    def __init__(self, k: int = 7, namespace: str | None = None):
+    def __init__(self, k: int = 5, namespace: str | None = None):
         self.k = k
         self.namespace = namespace or settings.PINECONE_NAMESPACE
         embedder = OpenAIEmbeddings(model="text-embedding-ada-002", api_key=settings.OPENAI_API_KEY)
