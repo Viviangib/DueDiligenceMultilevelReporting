@@ -8,6 +8,7 @@ from controllers.indicator import (
 )
 from db.db import get_db
 from utils.security import get_current_user
+from utils.cancel import cancel_registry
 
 router = APIRouter(prefix="/indicators", tags=["indicators"])
 
@@ -24,6 +25,12 @@ def extract_indicators(
 @router.get("/extract/status/{status_id}", dependencies=[Depends(get_current_user)])
 def get_indicator_status(status_id: int, db: Session = Depends(get_db)):
     return get_indicator_status_controller(status_id, db)
+
+
+@router.post("/extract/{status_id}/cancel", dependencies=[Depends(get_current_user)])
+def cancel_indicator_extraction(status_id: int):
+    cancel_registry.cancel("indicator", status_id)
+    return {"message": f"Cancellation requested for indicator extraction {status_id}"}
 
 
 @router.post("/upload", dependencies=[Depends(get_current_user)])

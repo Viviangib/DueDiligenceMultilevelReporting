@@ -17,6 +17,7 @@ from controllers.report import (
 )
 from services.report import ReportService
 from utils.security import get_current_user
+from utils.cancel import cancel_registry
 import os
 
 logger = logging.getLogger(__name__)
@@ -38,13 +39,11 @@ async def request_report_generation(
     excel_file: UploadFile = File(
         ..., description="Excel file containing analysis results"
     ),
-    standard_name: str = Form(
-        "User Standard", description="Name of the benchmarked standard"
+    sustainability_framework: str = Form(
+        "User Standard (version 1.0, 2024)", description="Sustainability framework name, version and year"
     ),
-    standard_version: str = Form("1.0", description="Version of the standard"),
-    standard_year: str = Form("2024", description="Year of publication"),
-    organization: str = Form(
-        "User Organization", description="Name of the founding organization"
+    legal_framework: str = Form(
+        "Legal Framework", description="Relevant legal framework"
     ),
     db: Session = Depends(get_db),
 ):
@@ -58,10 +57,8 @@ async def request_report_generation(
             background_tasks,
             excel_file,
             db,
-            standard_name,
-            standard_version,
-            standard_year,
-            organization,
+            sustainability_framework,
+            legal_framework,
         )
     except Exception as e:
         logger.error(f"Error starting report generation: {str(e)}")
@@ -83,6 +80,12 @@ async def get_report_status(report_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Failed to get report status")
 
 
+@router.post("/{report_id}/cancel", dependencies=[Depends(get_current_user)])
+def cancel_report(report_id: int):
+    cancel_registry.cancel("report", report_id)
+    return {"message": f"Cancellation requested for report {report_id}"}
+
+
 @router.get("/{report_id}/download", dependencies=[Depends(get_current_user)])
 async def download_report_file(report_id: int, db: Session = Depends(get_db)):
     """
@@ -92,9 +95,22 @@ async def download_report_file(report_id: int, db: Session = Depends(get_db)):
         report_service = ReportService()
         file_path = await report_service.get_report_file_for_download(db, report_id)
         if isinstance(file_path, str) and file_path and os.path.exists(file_path):
+            # Determine media type based on file extension
+            file_ext = os.path.splitext(file_path)[1].lower()
+            if file_ext == '.docx':
+                media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            elif file_ext == '.xlsx':
+                media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            else:
+                media_type = "application/octet-stream"
+            
+            # Schedule cleanup after download
+            from utils.file_cleanup import schedule_file_cleanup
+            schedule_file_cleanup(file_path, delay_seconds=10)
+            
             return FileResponse(
                 file_path,
-                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                media_type=media_type,
                 filename=os.path.basename(file_path),
             )
         raise HTTPException(status_code=404, detail="Report file not found")

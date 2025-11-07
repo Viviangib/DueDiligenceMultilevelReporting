@@ -13,10 +13,8 @@ async def start_report_generation(
     background_tasks: BackgroundTasks,
     excel_file: UploadFile,
     db: Session,
-    standard_name: str,
-    standard_version: str,
-    standard_year: str,
-    organization: str,
+    sustainability_framework: str,
+    legal_framework: str,
 ):
     """
     Start background report generation process.
@@ -47,10 +45,8 @@ async def start_report_generation(
             report_service.generate_and_save_report,
             report_id,
             temp_file_path,
-            standard_name,
-            standard_version,
-            standard_year,
-            organization,
+            sustainability_framework,
+            legal_framework,
         )
 
         return {
@@ -76,7 +72,7 @@ async def get_report_status_and_file_controller(db: Session, report_id: int):
 
     try:
         report = report_service.get_report_by_id(db, report_id)
-        logger.info(f"[GET] Looking for report_id={report_id}, found: {report}")
+        # logger.info(f"[GET] Looking for report_id={report_id}, found: {report}")
         if not report:
             logger.error(f"Report {report_id} not found in DB")
             raise HTTPException(status_code=404, detail="Report not found")
@@ -91,9 +87,22 @@ async def get_report_status_and_file_controller(db: Session, report_id: int):
             and file_path
             and os.path.exists(file_path)
         ):
+            # Determine media type based on file extension
+            file_ext = os.path.splitext(file_path)[1].lower()
+            if file_ext == '.docx':
+                media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            elif file_ext == '.xlsx':
+                media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            else:
+                media_type = "application/octet-stream"
+            
+            # Schedule cleanup after download
+            from utils.file_cleanup import schedule_file_cleanup
+            schedule_file_cleanup(file_path, delay_seconds=10)
+            
             return FileResponse(
                 file_path,
-                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                media_type=media_type,
                 filename=os.path.basename(file_path),
             )
 

@@ -1,8 +1,11 @@
 import logging
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from routers import api_router
 from db import Base, engine
 from core.config import settings
+import os
+from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
@@ -14,17 +17,27 @@ def log_pinecone_namespace():
     )
 
 
-# If using FastAPI, add startup event
+# Create FastAPI app
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://ddmr.gib-foundation.org",
+        "http://localhost:5173"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.on_event("startup")
 def startup_event():
     log_pinecone_namespace()
-
-
+    
 # Create DB tables
 Base.metadata.create_all(bind=engine)
-
 # Register routes
 app.include_router(api_router)

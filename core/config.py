@@ -16,7 +16,20 @@ class Settings(BaseSettings):
     PINECONE_NAMESPACE: str = ""
     REGION: str = "us-east-1"
     CLOUD: str = "aws"
-
+    
+    # SMTP Email Configuration
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: SecretStr = SecretStr("")
+    SMTP_PASSWORD: SecretStr = SecretStr("")
+    SMTP_REGION: str = ""
+    SENDER_EMAIL: str = ""
+    RECEIVER_EMAIL: str = ""
+    
+    # Frontend Configuration
+    FRONTEND_URL: str = "http://localhost:5173"
+    ALLOWED_FRONTEND_URLS: str = "http://localhost:5173"
+    
     # Storage roots
     STORAGE_ROOT: str = "storage"
     UPLOADS_DIR: str = "uploads"

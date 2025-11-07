@@ -13,7 +13,7 @@ This backend benchmarks Voluntary Sustainability Standards (VSS) against regulat
 - Retrieve regulatory evidence for each indicator (RAG)
 - Analyze alignment between VSS and regulations (GPT-4o mini)
 - Save results to Excel
-- Generate professional summary reports (Markdown)
+- Generate professional summary reports (DOCX format using pypandoc)
 - Robust logging and error handling
 - API authentication for all endpoints
 - Dynamic Pinecone namespace selection for analysis

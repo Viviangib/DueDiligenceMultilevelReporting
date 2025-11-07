@@ -26,6 +26,8 @@ from models.regulation import Regulation
 from models.analysis import Analysis
 from models.indicator_status import IndicatorStatus
 from models.report import Report
+from models.password_reset_token import PasswordResetToken
+
 
 
 # this is the Alembic Config object

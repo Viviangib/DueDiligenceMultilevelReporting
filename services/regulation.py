@@ -17,7 +17,7 @@ import logging
 
 from models.regulation import Regulation
 from core.config import settings
-from infrastructure.vectorstores.pinecone_index import embed_and_store_documents, chunk_text
+from vectorstores.pinecone_index import embed_and_store_documents, chunk_text
 
 
 logger = logging.getLogger(__name__)
@@ -89,3 +89,11 @@ class RegulationService:
         except Exception as e:
             self.update_embedding_status(db, regulation_id, "failed")
             raise Exception(str(e))
+        finally:
+            # Clean up the uploaded file after processing
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    logger.info(f"Cleaned up regulation file: {file_path}")
+            except Exception as cleanup_error:
+                logger.warning(f"Failed to cleanup regulation file {file_path}: {cleanup_error}")

@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 from models.indicator import Indicator
-from schemas.indicator import IndicatorCreate
 from models.indicator_status import IndicatorStatus
 
 
@@ -22,11 +21,3 @@ class IndicatorService:
         db.commit()
         db.refresh(status_job)
         return status_job
-
-    def update_status_job(self, db: Session, status_id: int, status: str):
-        status_job = (
-            db.query(IndicatorStatus).filter(IndicatorStatus.id == status_id).first()
-        )
-        if status_job:
-            setattr(status_job, "status", status)
-            db.commit()

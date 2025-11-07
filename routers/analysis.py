@@ -11,6 +11,7 @@ from fastapi import (
     Query,
 )
 from fastapi.responses import FileResponse
+from utils.cancel import cancel_registry
 from sqlalchemy.orm import Session
 from db import SessionLocal
 from controllers.analysis import (
@@ -38,12 +39,12 @@ def get_db():
 @router.post("/run", dependencies=[Depends(get_current_user)])
 def run_analysis(
     background_tasks: BackgroundTasks,
-    vss_files: list[UploadFile] = File(...),
+    vss_files: list[UploadFile] | None = File(None),
     process_id: str = File(...),
     namespace: str = Form(..., description="Pinecone namespace to use for RAG search"),
     db: Session = Depends(get_db),
 ):
-    from infrastructure.vectorstores.pinecone_retriever import namespace_exists
+    from vectorstores.pinecone_retriever import namespace_exists
 
     if not namespace_exists(namespace):
         from fastapi import HTTPException
@@ -63,3 +64,9 @@ def run_analysis(
 )
 def get_analysis_status(analysis_id: int, db: Session = Depends(get_db)):
     return get_analysis_status_controller(analysis_id, db)
+
+
+@router.post("/{analysis_id}/cancel", dependencies=[Depends(get_current_user)])
+def cancel_analysis(analysis_id: int):
+    cancel_registry.cancel("analysis", analysis_id)
+    return {"message": f"Cancellation requested for analysis {analysis_id}"}
