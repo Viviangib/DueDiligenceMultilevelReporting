@@ -126,6 +126,11 @@ class AnalysisService:
             indicators = await self._get_indicators_from_db(process_id)
             if not indicators:
                 raise Exception("No indicators found in DB for this process_id.")
+            
+            # Limit to first 50 indicators for analysis
+            # if len(indicators) > 50:
+            #     logger.info(f"Limiting analysis to first 50 indicators out of {len(indicators)} total indicators")
+            #     indicators = indicators[:50]
 
             # Initialize and build VSS vector store (no DB needed)
             await self._setup_vss_vector_store(vss_paths)
@@ -147,7 +152,7 @@ class AnalysisService:
                 return
 
             # Save results to Excel (no DB needed)
-            output_file = await self._save_results_to_excel(gpt_results)
+            output_file = await self._save_results_to_excel(gpt_results, indicators)
             
             # Update analysis status (open/close DB connection)
             await self._update_analysis_status(analysis_id, "completed", output_file)
@@ -211,7 +216,7 @@ class AnalysisService:
         logger.info(f"GPT processing completed. Total indicators processed: {len(gpt_results)}")
         return gpt_results
 
-    async def _save_results_to_excel(self, results: list) -> str:
+    async def _save_results_to_excel(self, results: list, original_indicators: list) -> str:
         """Save analysis results to Excel file."""
         from core.config import settings
         
@@ -219,12 +224,19 @@ class AnalysisService:
         os.makedirs(output_dir, exist_ok=True)
         output_file = os.path.join(output_dir, "llm_results.xlsx")
 
+        # Create a mapping of indicator_id to original indicator text
+        indicator_text_map = {ind.indicator_id: ind.indicator for ind in original_indicators}
+        
         # Prepare DataFrame with required columns and formatted GPT response
         data = []
         for row in results:
+            indicator_id = row.get("Indicator ID", "")
+            original_indicator_text = indicator_text_map.get(indicator_id, "")
+            
             data.append(
                 {
-                    "Indicator ID": row.get("Indicator ID", ""),
+                    "Indicator": original_indicator_text,
+                    "Indicator ID": indicator_id,
                     "Statement": row.get("STATEMENT", ""),
                     "Alignment Category": row.get("ALIGNMENT CATEGORY", ""),
                     "GPT Response": format_gpt_response(row),
