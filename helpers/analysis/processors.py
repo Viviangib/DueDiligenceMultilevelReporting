@@ -84,6 +84,9 @@ async def process_single_indicator(
                 }
             try:
                 response = await openai_client.chat(prompt, max_tokens=6000)
+                # Fix spacing between sections before parsing
+                from helpers.analysis.parsers import fix_section_spacing
+                response = fix_section_spacing(response)
                 parsed_result = {
                     "Indicator ID": indicator_id,
                     **parse_analysis_response(response),

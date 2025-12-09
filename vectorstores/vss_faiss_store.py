@@ -1,4 +1,8 @@
 import os
+# Set tokenizers parallelism before importing SentenceTransformer
+# This enables parallelism and prevents warnings when processes are forked
+os.environ["TOKENIZERS_PARALLELISM"] = "true"
+
 import logging
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass

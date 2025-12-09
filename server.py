@@ -1,10 +1,22 @@
+import os
+# Set tokenizers parallelism before any imports that use tokenizers
+# This prevents warnings when processes are forked after tokenizers initialization
+os.environ["TOKENIZERS_PARALLELISM"] = "true"
+
+import warnings
+# Suppress PyTorch FutureWarning about encoder_attention_mask
+warnings.filterwarnings("ignore", category=FutureWarning, message=".*encoder_attention_mask.*")
+# Suppress LangChain import warning
+warnings.filterwarnings("ignore", message=".*Importing debug from langchain root module.*")
+# Suppress LangChain deprecation warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="langchain")
+
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import api_router
 from db import Base, engine
 from core.config import settings
-import os
 from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
