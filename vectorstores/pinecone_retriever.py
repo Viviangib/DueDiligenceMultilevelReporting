@@ -33,13 +33,13 @@ class RAGSearcher:
         self.retriever = vector_store.as_retriever(search_kwargs={"k": self.k})
 
     def search(self, query: str):
-        docs = self.retriever.get_relevant_documents(query)
+        docs = self.retriever.invoke(query)
         return [doc.page_content for doc in docs]
 
     async def async_search(self, query: str):
         try:
             loop = asyncio.get_event_loop()
-            docs = await loop.run_in_executor(None, self.retriever.get_relevant_documents, query)
+            docs = await loop.run_in_executor(None, self.retriever.invoke, query)
             return docs
         except Exception as e:
             logger.error(
