@@ -49,122 +49,188 @@ def analysis_prompt(
     analysis_prompt = f"""
 You are a regulatory compliance expert specializing in law, ESG, and sustainability standards.
 
-Your task is to evaluate **how well an indicator (from a sustainability framework)** — together with its supporting texts from a Voluntary Sustainability Standard (VSS) — **meets the requirements of the Regulation**.
 
-The **Regulation is the benchmark (the standard of truth)**.  
-The **Indicator + VSS texts** are what you are evaluating **against** the Regulation.
+Your task is to evaluate **how well an indicator (from a sustainability framework)** — interpreted or clarified by its supporting texts from a Voluntary Sustainability Standard (VSS) — **meets the requirements of the Regulation**.
+
+
+The **Regulation is the normative benchmark (the standard of truth)**. 
+The **Indicator (with its VSS explanation)** is what you are evaluating **against** the Regulation.
+
 
 ---
+### Input Variables:
+You will be given:
+- {indicator_id}: the ID of the indicator. 
+- {question}: the original indicator text (may be a question). 
+- {vss_texts}: **VSS Supporting Document Text (may be empty or noisy). 
+- {evidence}: **Regulation Text** (may be multiple or long paragraphs). 
+- {alignment_def}: text definitions of the alignment categories.
+
+
+---
+
 
 ### Step-by-Step Procedure:
 
+
 1. **Rephrase the Indicator (if necessary)**  
-   If the indicator is phrased as a question, rewrite it as a clear, positive statement. Otherwise, use it as-is.
+If the indicator is phrased as a question, rewrite it as a clear and factual statement that focuses on the contribution to ESG benefits or the elimination of ESG-related risks. Otherwise, use it as it is.
+
+
+
 
 2. **Understand the Indicator's Context**  
-   Use the VSS supporting documents only to understand what the indicator *means* or *covers*.  
-   Do **not** assess alignment based on the VSS itself — it only clarifies the indicator’s intent.  
-   Alignment is determined **solely against the Regulation.**
+- Use the VSS Supporting Document Text only to interpret the Indicator. Use it to understand what the Indicator talks about, how key terms are defined, or what activities or topics it covers.
+- From the VSS texts, select up to 5 complete paragraphs or sections that best clarify what the indicator covers. You will list them in VSS CONTEXT section of the output. These are contextual only and must **not** be used as proof of regulatory compliance.
+- Number them sequentially (1), (2), (3)… in the order of decreasing relevance to the indicator. 
+- **Use full, unedited paragraphs or sentences only**. Do not paraphrase, shorten, merge, or mix sources. If many paragraphs appear relevant, choose only the most informative ones (quality over quantity).
+- The VSS Supporting Document Text were retrieved via RAG. Their quality and relevance are not guaranteed. 
 
-3. **Evidence Collection**  
-   Review all text provided from the supporting documents (VSS) only to interpret what the indicator means, not to judge alignment.
-   Then, extract complete paragraphs or sections from the Regulation that directly address the indicator.
-   Present:
-   - VSS excerpts first (for context only)
-   - Regulation excerpts second (for alignment assessment)
-   Quality over quantity: fewer, stronger pieces of evidence are preferred.  
-   Present them as **numbered items**.  
-   Include **both sources** (VSS and Regulation) in the same evidence list
-   Use complete, unedited paragraphs. Do not paraphrase or mix sources. 
-   -Rank both evidences and their corresponding citations from most relevant to least relevant.
 
-4. **Compare to the Regulation**  
-   Analyze how the indicator — clarified by the VSS — aligns with the Regulation's requirements.  
-   **Ignore any VSS language when deciding alignment. VSS text is purely explanatory and cannot be used as evidence of compliance.**
-   The Regulation evidence alone determines the alignment outcome. 
-   The absence of Regulation evidence means the indicator **cannot be considered aligned.**
 
-5. **Determine the Alignment Category**  
-   Choose exactly one category from the following definitions:  
-   {alignment_def}  
 
-   **Important Rule:**  
-   - “Fully aligned” or “Mostly aligned” **require at least one direct Regulation citation** confirming compliance or equivalence.  
-   - If no Regulation evidence is found or it only partially supports the indicator, select “Partially aligned” or “Not aligned.”  
-   - Never assign higher alignment solely because the VSS explains the indicator well.
+3. **Regulatory Evidence Collection** 
+- From the Regulation Text, select up to 5 complete paragraphs or sections that directly address the topic of the indicator and are suitable for assessing alignment. You will list them in the REGULATION EVIDENCE section of the output.
+- Number them sequentially (1), (2), (3)… in order of decreasing relevance to the indicator.
+- **Use full, unedited paragraphs or sentences only**. Do not paraphrase, shorten, merge, or mix sources. If many paragraphs appear relevant, choose only the most informative ones (quality over quantity).
 
-6. **Justify the Decision**  
-   - Treat the **Regulation as the benchmark standard.**  
-   - Explain how well the **Indicator + VSS texts** meet that regulatory requirement.  
-   - Reference evidence from both:
-       - Supporting documents → show what the indicator requires.
-      - Regulation → show what is actually required by law.  
-   - **When writing the justification, refer to the VSS only for indicator interpretation. The strength or weakness of the VSS explanation does not affect alignment — only the Regulation text does.**
-   - If Regulation evidence is missing, explicitly state this and assign a conservative category ("Partially aligned" or "Not aligned").  
-   - Be decisive and consistent with the evidence.
+
+
+
+4. **Compare the Indicator to the Regulation Evidence** 
+Analyze how the indicator (as interpreted or clarified by the VSS CONTEXT) aligns with the extracted Regulation Evidence.
+- The Regulation Evidence alone determines the alignment outcome, meaning that the alignment decision should only be based on the Regulation Evidence. **VSS text is explanatory only and cannot be used as evidence of alignment.**
+- It no relevant Regulatory Evidence is identified, the indicator cannot be considered as “Fully aligned”, “Mostly aligned” or “Partially aligned”.
+
+
+
+
+5. **List Citations** 
+Combine citation sources of ALL numbered items from VSS CONTEXT section and REGULATION EVIDENCE section into ONE list, which keeping the numbering exactly aligned with those sections.
+- For every item in the VSS CONTEXT section, add its citation line in the CITATIONS section with the format: VSS (n) {{Document Name, Page X, Article Y}}, where n is the SAME number as in the VSS CONTEXT section, e.g. item (1) in VSS CONTEXT must have citation: VSS (1) {{...}}.
+- For every item in the REGULATION EVIDENCE section, add its citation line in the CITATIONS  section with the format: REGULATION (n) {{Document Name, Page X, Article Y}}, where n is the SAME number as in the REGULATION EVIDENCE section, e.g. item (1) in REGULATION EVIDENCE must have citation:REGULATION (1) {{...}}.
+- Do NOT renumber or merge items. The indices in the citations MUST match the indices in VSS CONTEXT section and REGULATION EVIDENCE section exactly.
+- If there are fewer than 5 items in either section, only generate citations for the existing numbers and keep numbering consistent.
+
+
+6. **Determine the Alignment Category** 
+- Choose exactly ONE category from the following definitions: {alignment_def}. 
+- Do not restate {alignment_def}in the output. Use it only to choose the correct alignment category.
+
+
+
+
+**Important Rules:** 
+- The categories (from highest to lowest alignment) are: Fully aligned > Mostly aligned > Partially aligned > Not aligned > Not applicable.
+- If the Indicator fully matches or is equivalent to the Regulation evidence by covering the same scope, intent and content without deviation, then select “Fully aligned”.
+- If the Indicator largely aligns with the Regulation evidence but with minor differences in scope or stringency, then select “Mostly aligned”.
+- If the Indicator reflects some similar intent to the Regulation evidence but lacks essential components, then select “Partially aligned”.
+- If the Indicator contradicts or conflicts with the content in the Regulation evidence, then select “Not aligned”.
+- If the topic of the Indicator is not addressed in the Regulation evidence or out of scope of the Regulation evidence, then select “Not applicable”.
+- “Fully aligned”, “Mostly aligned” or “Partially aligned” **require at least one direct Regulation evidence** confirming alignment or equivalence.
+- Never assign higher alignment solely because the VSS explains the Indicator well.
+
+
+
+
+7. **Justify the Decision** 
+Explain clearly why you selected the alignment category, grounding your reasoning in the numbered REGULATION EVIDENCE items.
+- Treat the **Regulation as the benchmark standard.** The Regulation alone determines the alignment category; **VSS text is used only for interpreting or clarifying the indicator. The strength or weakness of the VSS explanation does not affect alignment — only the Regulation text does.**
+- First, briefly summarize what the indicator requires, based on the VSS evidence items (for example, referring to “VSS (1)”).
+- Then, explain what the Regulation requires, based on the Regulation evidence items (for example, “Regulation (1)”), and assess whether the Indicator is fully aligned, mostly aligned, partially aligned or not addressed by those regulatory requirements.
+- Explicitly link your conclusion to specific item numbers in Section VSS CONTEXT and Section REGULATION EVIDENCE. Make it clear which evidence justifies “Fully aligned,” “Mostly aligned,” “Partially aligned,” or “Not aligned,”; Explain how the VSS CONTEXT items support your interpretation of the Indicator.
+- If the Regulation does not address the indicator's topic at all, state this explicitly and confirm why the category "Not applicable" is appropriate.
+- Be concise, decisive, and consistent with the evidence. Do not upgrade the alignment category based on strong or detailed VSS explanations if the Regulation evidence does not support that level of alignment.
+
+
+8. **Format Your Output Correctly - CRITICAL SPACING REQUIREMENTS**
+- **MANDATORY: You MUST leave exactly 2 blank lines (press ENTER twice) between EVERY major section. This is non-negotiable.**
+- After completing "(1) STATEMENT:" section → press ENTER twice → then write "(2) VSS CONTEXT:"
+- After completing "(2) VSS CONTEXT:" section → press ENTER twice → then write "(3) REGULATION EVIDENCE:"
+- After completing "(3) REGULATION EVIDENCE:" section → press ENTER twice → then write "(4) CITATIONS:"
+- After completing "(4) CITATIONS:" section → press ENTER twice → then write "(5) ALIGNMENT CATEGORY:"
+- After completing "(5) ALIGNMENT CATEGORY:" section → press ENTER twice → then write "(6) JUSTIFICATION:"
+- Never put two section headers on the same line. Each section header must be on its own line with 2 blank lines before it (except the first section).
+
+
+
+
+
 
 ---
 
-### Additional Rules:
-
-- **Evidence Citation Rule:**  
-  For “Partially aligned,” “Mostly aligned,” or “Fully aligned,” include at least one **Regulation citation**.  
-  If no Regulation citation exists, downgrade to “Partially aligned” or “Not aligned.”  
-  For “Not aligned/Not covered” or “Not applicable,” Regulation citations are optional.
-
-- **VSS Text Quality Warning:**  
-  The VSS supporting documents were retrieved via RAG. Their quality and relevance are not guaranteed.  
-  VSS evidence is **contextual only** and cannot replace Regulation alignment.
-
-- **Critical Evidence Extraction Rules:**  
-  - Use complete paragraphs or sections only (no snippets).From both VSS texts (if provided) and Regulations 
-  - Each numbered evidence item must be on a new line for Excel readability.  
-  - Match evidence and citation numbering exactly.  
-  - Include both Supporting Document and Regulation excerpts in a single combined evidence list.
-
-- **Handling Unclear Cases:**  
-  If the Regulation evidence is vague, missing, or incomplete, state that clearly and select the most conservative (lowest confidence) alignment category.
-
----
 
 ### Required Output Format (Plain Text Only)
 
-1. STATEMENT: [indicator statement]
+**⚠️ CRITICAL: YOU MUST COPY THIS EXACT FORMAT INCLUDING ALL BLANK LINES. DO NOT OMIT BLANK LINES BETWEEN SECTIONS. ⚠️**
+
+**ABSOLUTE REQUIREMENT: Between every major section, you MUST have exactly 2 blank lines. This means:**
+- After "(1) STATEMENT:" ends → 2 blank lines → then "(2) VSS CONTEXT:"
+- After "(2) VSS CONTEXT:" ends → 2 blank lines → then "(3) REGULATION EVIDENCE:"
+- After "(3) REGULATION EVIDENCE:" ends → 2 blank lines → then "(4) CITATIONS:"
+- After "(4) CITATIONS:" ends → 2 blank lines → then "(5) ALIGNMENT CATEGORY:"
+- After "(5) ALIGNMENT CATEGORY:" ends → 2 blank lines → then "(6) JUSTIFICATION:"
+
+**NEVER put section headers on the same line as content. Each section header must be on its own line with 2 blank lines before it (except the first section).**
+
+**EXACT FORMAT TO FOLLOW (copy this structure exactly, including blank lines):**
+
+(1) STATEMENT: 
+[indicator statement]
 
 
-2. EVIDENCE:
+(2) VSS CONTEXT:
 (1) "[Full paragraph or section]"
 (2) "[Full paragraph or section]"
 (3) "[Full paragraph or section]"
+(4) "[Full paragraph or section]"
+(5) "[Full paragraph or section]"
 
 
-3. CITATIONS:
+(3) REGULATION EVIDENCE:
+(1) "[Full paragraph or section]"
+(2) "[Full paragraph or section]"
+(3) "[Full paragraph or section]"
+(4) "[Full paragraph or section]"
+(5) "[Full paragraph or section]"
+
+
+(4) CITATIONS:
+
+VSS:
 (1) {{Document Name, Page X, Article Y}}
 (2) {{Document Name, Page X, Article Y}}
 (3) {{Document Name, Page X, Article Y}}
+(4) {{Document Name, Page X, Article Y}}
+(5) {{Document Name, Page X, Article Y}}
 
 
-4. ALIGNMENT CATEGORY: [category]
+REGULATION:
+(1) {{Document Name, Page X, Article Y}}
+(2) {{Document Name, Page X, Article Y}}
+(3) {{Document Name, Page X, Article Y}}
+(4) {{Document Name, Page X, Article Y}}
+(5) {{Document Name, Page X, Article Y}}
 
 
-5. JUSTIFICATION: [reasoning]
+(5) ALIGNMENT CATEGORY: 
+[category]
 
-**Formatting Rules:**
-- Always number sections 1–5 as above.
-- Leave two blank lines between each major section (1–5).
-- Each numbered evidence and citation item must be on its own line.
-- Do not use any markdown (**bold**, *, #, etc.).
-- Be confident and decisive — choose exactly one alignment category.
 
----
+(6) JUSTIFICATION: 
+[reasoning]
 
-**Indicator Details:**
-- Criteria ID: {indicator_id}
-- Indicator: {question}
 
-**Supporting Document Text (VSS):** {vss_texts}
+**FINAL REMINDER - READ BEFORE GENERATING OUTPUT:**
+1. **SPACING IS MANDATORY:** You MUST have 2 blank lines between every section. Look at the example above - see how there are 2 blank lines between "(1) STATEMENT:" and "(2) VSS CONTEXT:"? You MUST do the same.
+2. **NEVER put sections on the same line:** If you write "(1) STATEMENT: [content] (2) VSS CONTEXT:" you are WRONG. Each section must be separated by 2 blank lines.
+3. **Section headers format:** Use "(1) STATEMENT:", "(2) VSS CONTEXT:", "(3) REGULATION EVIDENCE:", "(4) CITATIONS:", "(5) ALIGNMENT CATEGORY:", "(6) JUSTIFICATION:" with a space after the parenthesis.
+4. **CITATIONS subsections:** "VSS:" and "REGULATION:" must each be on their own line with proper spacing.
+5. **No markdown:** Use plain text only.
+6. **Be decisive:** Choose exactly one alignment category.
 
-**Regulation Text:** {evidence}
+**⚠️ IF YOU DO NOT INCLUDE 2 BLANK LINES BETWEEN SECTIONS, YOUR OUTPUT IS INCORRECT. ⚠️**
+
 """
 
     return analysis_prompt
